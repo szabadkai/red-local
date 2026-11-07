@@ -1,0 +1,19 @@
+# Dependencies and engine caches
+node_modules/
+.godot/
+.import/
+
+# Local settings and credentials
+.env
+.env.*
+!.env.example
+export_credentials.cfg
+
+# OS files, logs, and temporary files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+/nul
+
+# Keep dist/: the local launchers use the prebuilt game.

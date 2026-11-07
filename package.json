@@ -1,0 +1,14 @@
+{
+  "name": "red-other-side-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix ridingHood-web run dev -- --host 0.0.0.0",
+    "build": "npm --prefix ridingHood-web run build && node scripts/copy-build.mjs",
+    "test": "node --experimental-strip-types --test ridingHood-web/tests/*.test.ts",
+    "start": "node tools/serve.mjs --open"
+  },
+  "workspaces": [
+    "ridingHood-web"
+  ]
+}

@@ -1,0 +1,62 @@
+// Game constants ported from Godot Player.gd and extended for dual-form system
+
+export const GAME_WIDTH = 640;
+export const GAME_HEIGHT = 360;
+
+export const PHYSICS = {
+  GRAVITY: 700,
+  COYOTE_TIME_MS: 120,
+  JUMP_BUFFER_MS: 150,
+} as const;
+
+export const LIGHT_FORM = {
+  SPEED: 150,
+  ACCELERATION: 3000,
+  FRICTION: 2000,
+  JUMP_VELOCITY: -330,
+  AIR_ACCELERATION: 1800,
+  AIR_RESISTANCE: 600,
+  ATTACK_DAMAGE: 3,
+  ATTACK_KNOCKBACK: 200,
+  DAMAGE_TAKEN_MULT: 1.0,
+} as const;
+
+export const DARK_FORM = {
+  SPEED: 185,
+  ACCELERATION: 3500,
+  FRICTION: 2200,
+  JUMP_VELOCITY: -360,
+  AIR_ACCELERATION: 2200,
+  AIR_RESISTANCE: 500,
+  ATTACK_DAMAGE: 5,
+  ATTACK_KNOCKBACK: 300,
+  DAMAGE_TAKEN_MULT: 1.5,
+  DASH_SPEED: 300,
+  DASH_DURATION_MS: 200,
+  DASH_COOLDOWN_MS: 600,
+} as const;
+
+export const PLAYER = {
+  MAX_HEALTH: 5,
+  KNOCKBACK_FORCE: 120,
+  INVINCIBILITY_MS: 800,
+} as const;
+
+export const DARKNESS_METER = {
+  MAX: 100,
+  TRANSFORM_THRESHOLD: 50,
+  DRAIN_PER_SECOND: 3,
+  GAIN_ON_DEAL_DAMAGE: 5,
+  GAIN_ON_TAKE_DAMAGE: 15,
+  GAIN_ON_KILL: 10,
+  GAIN_ON_WOLF_ESSENCE: 25,
+  HEALING_PULSE_COST: 50,
+} as const;
+
+export const ENEMY = {
+  ORC_SPEED: 50,
+  ORC_HEALTH: 3,
+  ORC_DAMAGE: 1,
+  ORC_ACCELERATION: 5,
+} as const;
+
