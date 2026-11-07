@@ -3,17 +3,8 @@ export const BALANCE = { width: 960, height: 420, speed: 176, gravity: 850, jump
   feather: 510, dashSpeed: 690, dashDuration: .34, playerWidth: 18, playerHeight: 30,
   briarWidth: 112, briarReach: 205, coyote: .1, jumpBuffer: .13, step: 1 / 120 };
 export type Card = 'feather' | 'step' | 'briar';
-export type Point = { x: number; y: number };
-export type Platform = { x: number; y: number; w: number; h: number; oneWay?: boolean };
-export type Room = { name: string; subtitle: string; hint: string; spawn: Point; exit: Point; treasure: Point; platforms: Platform[]; hazard?: { x: number; y: number; range: number; period: number } };
-export const ROOMS: Room[] = [
-  { name: 'The first clearing', subtitle: 'A little courage goes a long way.', hint: 'That ledge is too high for a jump. Try the Feather.', spawn: {x:78,y:354}, exit:{x:879,y:260}, treasure:{x:596,y:158}, platforms:[
-    {x:0,y:354,w:342,h:100},{x:258,y:318,w:84,h:36},{x:398,y:223,w:248,h:200},{x:732,y:260,w:228,h:180}] },
-  { name: 'The broken crossing', subtitle: 'There is always another way across.', hint: 'Dash across the gap, or grow yourself a stepping stone.', spawn:{x:76,y:326}, exit:{x:881,y:326}, treasure:{x:435,y:252}, platforms:[
-    {x:0,y:326,w:300,h:120},{x:560,y:326,w:400,h:120}] },
-  { name: 'The lantern keeper', subtitle: 'Choose your moment. Make your own path.', hint: 'The red wisp is dangerous. Pause in the air to plan your way past.', spawn:{x:72,y:350}, exit:{x:880,y:300}, treasure:{x:405,y:151}, platforms:[
-    {x:0,y:350,w:220,h:100},{x:252,y:310,w:64,h:160},{x:366,y:265,w:218,h:180},{x:748,y:300,w:212,h:150}] ,hazard:{x:668,y:278,range:64,period:4.2}},
-];
+import { ROOMS, type Point, type Platform } from './rooms.ts';
+export { ROOMS, type Point, type Platform, type Room } from './rooms.ts';
 export type Mode = 'ready' | 'playing' | 'planning' | 'complete';
 export class World {
   roomIndex = 0; mode: Mode = 'ready'; selected: Card | null = null;
@@ -22,11 +13,20 @@ export class World {
   time=0; elapsed=0; treasure=false; dark=false; transformations=true; attempts=1;
   briar: Platform | null=null; target: Point={x:0,y:0}; notice=''; effect=0; landingTransform=0; pendingTransform=false;
   events: string[]=[];
+  crumbleTimers: Record<number,number> = {};
+  supportIndex: number | null = null;
+  get roomPlatforms(): Platform[] {
+    return this.room.platforms.flatMap((p,i)=> {
+      if(p.crumble && (this.crumbleTimers[i] ?? 0)>=p.crumble)return [];
+      return [{...p,sourceIndex:i,x:p.x+(p.motion?Math.sin(this.time/p.motion.period*Math.PI*2)*p.motion.range:0)}];
+    });
+  }
   get room() { return ROOMS[this.roomIndex]; }
-  get platforms() { return this.briar ? [...this.room.platforms,this.briar] : this.room.platforms; }
+  get platforms() { return this.briar ? [...this.roomPlatforms,this.briar] : this.roomPlatforms; }
   constructor(roomIndex=0) { this.reset(roomIndex); }
   reset(roomIndex=this.roomIndex) {
-    this.roomIndex=roomIndex; this.x=this.room.spawn.x; this.y=this.room.spawn.y;
+    this.crumbleTimers={};this.supportIndex=null;
+    this.roomIndex=Math.max(0,Math.min(ROOMS.length-1,roomIndex)); this.x=this.room.spawn.x; this.y=this.room.spawn.y;
     this.vx=0; this.vy=0; this.facing=1; this.grounded=true; this.coyote=BALANCE.coyote;
     this.bufferedJump=0; this.dash=0; this.time=0; this.elapsed=0; this.treasure=false; this.dark=false;
     this.briar=null; this.selected=null; this.mode='playing'; this.effect=0; this.landingTransform=0; this.pendingTransform=false;
@@ -65,20 +65,27 @@ export class World {
   hazardPosition() { const h=this.room.hazard;return h?{x:h.x+Math.sin(this.time/h.period*Math.PI*2)*h.range,y:h.y}:null; }
   step(dt:number, direction:number) {
     if(this.mode!=='playing') return;
-    this.time+=dt;this.elapsed+=dt;this.effect=Math.max(0,this.effect-dt);this.landingTransform=Math.max(0,this.landingTransform-dt);
+    let carryX=0;
+    const support=this.grounded?this.roomPlatforms.find(p=>p.sourceIndex===this.supportIndex):undefined;
+    this.time+=dt;this.elapsed+=dt;
+    for(const key of Object.keys(this.crumbleTimers))this.crumbleTimers[Number(key)]+=dt;
+    if(support?.motion){const next=this.roomPlatforms.find(p=>p.sourceIndex===support.sourceIndex);if(next)carryX=next.x-support.x;}
+    if(support?.crumble && this.crumbleTimers[support.sourceIndex!]>=support.crumble){this.grounded=false;this.supportIndex=null;this.events.push('crumble');}
+    this.effect=Math.max(0,this.effect-dt);this.landingTransform=Math.max(0,this.landingTransform-dt);
     this.bufferedJump=Math.max(0,this.bufferedJump-dt);this.coyote=this.grounded?BALANCE.coyote:Math.max(0,this.coyote-dt);
     if(this.bufferedJump>0&&this.coyote>0) {this.vy=-BALANCE.jump;this.grounded=false;this.coyote=0;this.bufferedJump=0;this.events.push('jump');}
     if(this.dash>0) {this.dash=Math.max(0,this.dash-dt);this.vx=this.facing*BALANCE.dashSpeed;this.vy=0;}
     else {this.vx=direction*BALANCE.speed;this.vy+=BALANCE.gravity*dt;if(direction)this.facing=direction;}
-    let nx=this.x+this.vx*dt;
+    let nx=this.x+this.vx*dt+carryX;
     for(const p of this.platforms) if(!p.oneWay && this.y>p.y+1&&this.y-30<p.y+p.h-1) {
       if(this.x+9<=p.x&&nx+9>p.x) {nx=p.x-9;this.dash=0;this.vx=0;}
       if(this.x-9>=p.x+p.w&&nx-9<p.x+p.w) {nx=p.x+p.w+9;this.dash=0;this.vx=0;}
     }
     this.x=Math.max(10,Math.min(950,nx));
-    let ny=this.y+this.vy*dt;const wasGrounded=this.grounded;this.grounded=false;
+    let ny=this.y+this.vy*dt;const wasGrounded=this.grounded;this.grounded=false;this.supportIndex=null;
     for(const p of this.platforms) if(this.x+8>p.x&&this.x-8<p.x+p.w) {
-      if(this.vy>=0&&this.y<=p.y+.1&&ny>=p.y) {ny=p.y;this.vy=0;this.grounded=true;}
+      if(this.vy>=0&&this.y<=p.y+.1&&ny>=p.y) {ny=p.y;this.vy=0;this.grounded=true;this.supportIndex=p.sourceIndex??null;
+        if(p.crumble&&p.sourceIndex!==undefined&&this.crumbleTimers[p.sourceIndex]===undefined){this.crumbleTimers[p.sourceIndex]=0;this.events.push('crack');}}
       else if(!p.oneWay&&this.vy<0&&this.y-30>=p.y+p.h&&ny-30<p.y+p.h) {ny=p.y+p.h+30;this.vy=0;}
     }
     this.y=ny;
@@ -89,6 +96,6 @@ export class World {
     if(this.y>460||(h&&Math.abs(this.x-h.x)<19&&Math.abs(this.y-16-h.y)<25)) {
       this.retry();this.notice='Try another route. Your cards are back.';this.events.push('retry');return;
     }
-    if(Math.abs(this.x-this.room.exit.x)<22&&Math.abs(this.y-this.room.exit.y)<12&&this.grounded) {this.mode='complete';this.events.push('complete');}
+    if(this.x>=this.room.exit.x-22&&Math.abs(this.y-this.room.exit.y)<12&&this.grounded) {this.mode='complete';this.events.push('complete');}
   }
 }

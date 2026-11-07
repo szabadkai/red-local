@@ -1,93 +1,81 @@
-# RED — local prototype
+# RED — The Other Side
 
-**[Play RED in your browser](https://szabadkai.github.io/red-local/)**
+**[Play the game](https://szabadkai.github.io/red-local/)**
 
-Run `npm run play` to open the included playable build locally. To rebuild from
-source, run `npm ci && npm run build` first. Use `npm run dev` for live development.
+A compact, complete browser puzzle-platformer. Carry a lantern home through
+12 authored clearings in three chapters: **The Lantern Wood**, **The Drowned
+Village**, and **The Thorn House**. Each attempt gives Red three single-use
+movement cards. Find a route, collect optional keepsakes, and retry instantly.
 
-Pushes to `main` run tests, build the game, and deploy `dist/` to GitHub Pages
-through [the Pages workflow](.github/workflows/pages.yml).
+## Play locally
 
-**Asset rights:** This repository includes purchased, licensed assets. Public
-availability does not grant permission to reuse them. See [Asset rights](ASSET_RIGHTS.md)
-and the third-party credits below for applicable terms.
-
-Start with **START_HERE.md** for the new card-platformer and local launchers. The historical action-game documentation below describes `?classic`.
-
-# Dark Riding Hood
-
-A dark-themed action platformer where Little Red Riding Hood battles through a corrupted forest, wielding a dual-form light/dark transformation system. Built with Godot 4.5 (desktop) and Phaser 3 (web).
-
-**[Play in browser](https://szabadkai.github.io/ridingHood/)**
-
-## Gameplay
-
-Fight through 5 levels — from the Dark Forest to The Abyss — defeating orcs and a final boss. A darkness meter fills from combat and pickups; once it crosses the threshold, press **C** to transform into Dark Riding Hood: faster, stronger, but more fragile. The meter drains over time in dark form, forcing you back to light.
-
-### Controls
-
-| Action | Key |
-|--------|-----|
-| Move | Arrow keys / WASD |
-| Jump | Up / W / Space |
-| Attack | X |
-| Transform | C |
-| Dodge (light: roll, dark: dash) | Z |
-| Pause | ESC / P |
-
-### Mechanics
-
-- **Light form** — balanced stats, roll dodge
-- **Dark form** — 1.5x damage output, dash with i-frames, but takes 1.5x damage and meter drains constantly
-- **3-hit combo** — chain attacks with X
-- **Coyote time & jump buffering** — forgiving platforming
-- **Checkpoints** — respawn mid-level on death
-- **Pickups** — food restores health, wolf essence fills the darkness meter
-
-## Levels
-
-1. **Dark Forest** — introductory platforming, 13 enemies
-2. **Abandoned Village** — tighter gaps, 16 enemies
-3. **Huntsman's Castle** — corridors and walls, 18 enemies
-4. **Grandmother's Tower** — vertical focus, 16 enemies
-5. **The Abyss** — maximum challenge, 22 enemies + boss arena
-
-## Tech Stack
-
-| | Desktop | Web |
-|---|---------|-----|
-| Engine | Godot 4.5 | Phaser 3.80.1 |
-| Language | GDScript | TypeScript |
-| Resolution | 320x180 scaled | 320x180 scaled |
-| Build | Godot export | Vite 8 |
-
-## Running the Web Version
-
-```bash
-cd ridingHood-web
-npm install
-npm run dev       # dev server on localhost:3000
-npm run build     # production build to dist/
+```sh
+npm run play
 ```
 
-## Project Structure
+This opens the included build in your browser. Node.js is required. The Mac and
+Windows launchers also support Python 3; see [START_HERE.md](START_HERE.md).
 
+## Develop and verify
+
+Node.js 22.6+ (24 recommended):
+
+```sh
+npm ci
+npm run dev
+npm test
+npm run build
 ```
-ridingHood/
-├── Scenes/                  # Godot scenes
-├── Scripts/                 # GDScript game logic
-├── Assets/                  # Shared art & audio
-├── ridingHood-web/
-│   ├── src/
-│   │   ├── scenes/          # Boot, Preload, MainMenu, Game, UI, Pause, Death, Victory, Overworld
-│   │   ├── entities/        # Player, Enemy, Orc, WolfKing, Checkpoint, Pickup
-│   │   ├── systems/         # Camera, Sound, Parallax managers
-│   │   ├── config/          # Game balance, animations, input
-│   │   ├── levels/          # Level tile/enemy/pickup data
-│   │   └── utils/           # EventBus, math helpers
-│   └── public/assets/       # Sprites, tilemaps, audio
-└── project.godot
-```
+
+Pushes to `main` test and build the game on Linux, then deploy `dist/` through
+[GitHub Actions](.github/workflows/pages.yml). The Vite build uses relative URLs
+so the game works under the `/red-local/` GitHub Pages path.
+
+## Controls
+
+| Action | Keyboard / mouse | Standard gamepad |
+| --- | --- | --- |
+| Move | A / D or left / right arrows | Left stick / D-pad |
+| Jump | Space | A |
+| Feather: upward launch | X | X |
+| Step: forward dash | C | B |
+| Briar: aim, then grow a platform | Hold V; mouse / arrows; release V | Hold Y; either stick / D-pad; release Y |
+| Pause and plan | Hold Shift / right mouse | Hold LB |
+| Retry | R | Back / View |
+| Settings | Controls & cards | Start / Menu |
+
+Keyboard bindings and equipped action slots are configurable. In controller menus,
+use D-pad to navigate, A to choose, and B to close. Left/right adjusts a focused
+slider or selector. Controller button names use the standard Xbox layout.
+
+## A complete small journey
+
+- Moving rafts carry Red; cracked ledges warn before falling. Planning pauses both.
+- Twelve optional keepsakes, a story ending, and an extra ending line for finding all twelve.
+- Layered, optional hints in every clearing; sequential room unlocks and replay via Journey.
+- Local saves for progress, keepsakes, best card counts, sound, and accessibility settings.
+- Separate music/effects volume, reduced decorative motion, larger text, and a gentle
+  70% simulation-speed option. These do not change puzzle geometry or rewards.
+- Transformation is cosmetic. Feather, Step, and Briar work identically in both forms.
+- No accounts, purchases, random draws, combat, or lives. Browser-local saves do not
+  sync across devices. A reload resumes at a room start with a fresh hand.
+
+The original action game remains available with `?classic`; its Godot source is
+also retained. [Historical documentation](docs/CLASSIC_GAME.md) describes that mode.
+
+## Validation
+
+See [campaign routes](docs/red-concept/CAMPAIGN_ROUTES.md) and
+[release validation](docs/red-concept/RELEASE_VALIDATION.md) for checks and limits.
+Tests exercise the actual fixed-step simulation, including complete routes,
+platform behavior, reset, saves, and controller input edges.
+
+## Asset rights
+
+This repository contains purchased, licensed assets. Public availability does
+not grant permission to extract or reuse them. See [ASSET_RIGHTS.md](ASSET_RIGHTS.md)
+and the [asset inventory](docs/ASSET_INVENTORY.md). Original third-party licenses
+continue to apply. No blanket open-source license is granted.
 
 ## Credits
 
@@ -106,51 +94,10 @@ Used for jump, land, and player hurt.
 ### Art
 
 - Tileset: [0x72 Dungeon Tileset II](https://0x72.itch.io/dungeontileset-ii)
-- Custom character animations (Light & Dark forms)
+- Licensed character animations (Light & Dark forms); purchased assets are not offered for reuse
 - 6-layer parallax forest backgrounds
 
-## RED — The Other Side prototype
 
-The web entry point now opens a separate three-room card/platforming prototype.
-The original action game remains available with `?classic` in the URL. The Godot
-project and original action scenes are unchanged.
-
-From the repository root, with Node 22.6+ (Node 24 recommended):
-
-```sh
-npm install
-npm run dev
-npm test
-npm run build
-```
-
-The build output is `dist/`. For a static host, serve that directory. No account,
-API key, backend, or external CDN is required. The prototype uses the original
-light/dark player animations, transformation effects, forest layers, and audio.
-Do not commit `node_modules`; the previously checked-in platform-specific copy
-was removed from tracking and replaced with lockfile-managed dependencies.
-
-### Controls
-
-- A/D or arrows: move. Space: jump.
-- X: Feather leap. C: Step dash in your facing direction. Both act immediately.
-- Hold V: aim Briar with mouse or arrows; release V to place it. Invalid placement preserves the card.
-- Controls & cards: rebind buttons and swap cards between the three action slots. Saved on this browser.
-- Hold Shift or right mouse: optional pause. Escape: cancel without spending.
-- R: restore the whole current attempt. Chapter buttons allow direct room selection.
-- Sound starts muted; the music-note button enables it. Settings contain the cosmetic transformation toggle.
-
-All three abilities remain identical in light and dark form. There is no darkness
-meter, combat, random draw, or replenishment within an attempt. Each room has an
-optional golden keepsake and a lantern exit. Death restarts immediately.
-
-### Code and verification
-
-- `ridingHood-web/src/prototype/model.ts`: deterministic fixed-step movement,
-  collision, abilities, room data and reset state.
-- `game.ts`: Phaser rendering, original animation/audio integration, input, previews.
-- `ui.ts` and `style.css`: responsive game interface and instructions.
-- `ridingHood-web/tests/prototype.test.ts`: state invariants and simulated complete routes.
-- `docs/red-concept/ROUTES.md`: reproducible route notes and validation limits.
-
-The browser project remains Phaser/TypeScript/Vite. This local revision adds generated forest, stone, and card artwork. Platforms and character animation remain live game elements. The original concept renders are included as references, not used as flat screenshots of gameplay.
+The illustrated forest, stone, and three card images were generated for this
+project; see [art notes](docs/red-concept/ART_NOTES.md). Chapter scenery overlays
+are code-drawn. No additional purchased asset packs were added for the campaign.
