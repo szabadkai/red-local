@@ -4,6 +4,10 @@ Unzip the entire folder first. This contains the playable build, editable source
 
 ## Play on your Mac
 
+With Node.js installed, run `npm run play` from this folder to open the game.
+The hosted game is also available at https://szabadkai.github.io/red-local/.
+Purchased assets are not licensed for reuse; see [Asset rights](ASSET_RIGHTS.md).
+
 Open Terminal in the extracted folder, then run:
 
 ```sh

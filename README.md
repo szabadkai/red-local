@@ -1,5 +1,17 @@
 # RED — local prototype
 
+**[Play RED in your browser](https://szabadkai.github.io/red-local/)**
+
+Run `npm run play` to open the included playable build locally. To rebuild from
+source, run `npm ci && npm run build` first. Use `npm run dev` for live development.
+
+Pushes to `main` run tests, build the game, and deploy `dist/` to GitHub Pages
+through [the Pages workflow](.github/workflows/pages.yml).
+
+**Asset rights:** This repository includes purchased, licensed assets. Public
+availability does not grant permission to reuse them. See [Asset rights](ASSET_RIGHTS.md)
+and the third-party credits below for applicable terms.
+
 Start with **START_HERE.md** for the new card-platformer and local launchers. The historical action-game documentation below describes `?classic`.
 
 # Dark Riding Hood

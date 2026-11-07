@@ -1,5 +1,6 @@
 # Dependencies and engine caches
 node_modules/
+/ridingHood-web/dist/
 .godot/
 .import/
 
