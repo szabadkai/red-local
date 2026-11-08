@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>Environment art review</title>
+<style>@font-face{font-family:Silkscreen;src:url('../assets/Silkscreen-Regular.ttf')}body{background:#0d1820;color:#eadcb5;font:14px monospace;margin:24px}h2{font-size:16px}canvas{display:block;width:960px;max-width:100%;image-rendering:pixelated;border:2px solid #526047}section{margin:24px 0}img{image-rendering:pixelated;width:1024px;max-width:none}</style>
+<h1>Environment art review — native pixel scale</h1>
+<section><h2>Mossy cliffs and broken crossing</h2><canvas id="cliff" width="480" height="200"></canvas></section>
+<section><h2>Home — waiting for the three embers</h2><canvas id="locked" width="480" height="200"></canvas></section>
+<section><h2>Home — all three embers collected</h2><canvas id="open" width="480" height="200"></canvas></section>
+<section><h2>Original terrain sheet</h2><img src="../assets/environment/terrain.png"></section>
+<section><h2>Original gothic sheet</h2><img src="../assets/environment/gothic.png"></section>
+<script type="module">
+import {drawTerrain,drawHome} from '../environment.mjs';import {level} from '../model.mjs';
+const images=new Map();await Promise.all(['terrain','gothic',...Array.from({length:6},(_,i)=>'forest'+(i+2))].map(key=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{images.set(key,im);resolve()};im.onerror=reject;im.src=key.startsWith('forest')?'../assets/forest/'+key.slice(6)+'.png':'../assets/environment/'+key+'.png'})));
+await document.fonts.ready;
+for(const [id,cam,embers] of [['cliff',280,0],['locked',1440,0],['open',1440,3]]){
+ const ctx=document.getElementById(id).getContext('2d');ctx.imageSmoothingEnabled=false;ctx.scale(.5,.5);ctx.translate(0,-80);
+ const g=ctx.createLinearGradient(0,0,0,480);g.addColorStop(0,'#10252b');g.addColorStop(.65,'#4f8980');g.addColorStop(1,'#a8c2a0');ctx.fillStyle=g;ctx.fillRect(0,0,960,540);
+ for(let i=2;i<=6;i++){const im=images.get('forest'+i),w=im.width*2,h=im.height*2,offset=-(cam*(.03+i*.035))%w;ctx.save();ctx.globalAlpha=i<4?.5:.8;for(let x=offset-w;x<960;x+=w)ctx.drawImage(im,Math.round(x/2)*2,420-h,w,h);ctx.restore()}
+ ctx.translate(-cam,0);drawTerrain(ctx,images,level(),2,false);drawHome(ctx,images,embers,2,false);
+}
+</script>

@@ -7,6 +7,22 @@ A compact, complete browser puzzle-platformer. Carry a lantern home through
 Village**, and **The Thorn House**. Each attempt gives Red three single-use
 movement cards. Find a route, collect optional keepsakes, and retry instantly.
 
+## Browser poker platformer
+
+The new standalone poker platformer lives in `poker-web/`. Run `npm run play:poker`
+and open the printed local address. It preserves the moving five-card hand,
+poker attacks, and timed Dark Red transformation, with a scrolling platforming
+level and enemy patrol/chase/lunge/slam behavior. `npm run test:poker` tests its
+rules, movement, full level route, and enemy behavior; `npm run build:poker` builds
+its independent static site. The campaign below remains unchanged.
+
+## Godot poker combat prototype
+
+A separate combat sandbox restores the moving pixel-card hand: five cards, poker-powered
+attacks, and draws earned through sword hits. Open the Godot project and choose
+**Poker Combat Prototype**, or run `godot4 --path . Scenes/PokerPrototype.tscn`.
+See [controls, rules, and validation](docs/POKER_PROTOTYPE.md).
+
 ## Play locally
 
 ```sh

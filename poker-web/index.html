@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0b1416"><meta name="description" content="A fairy-tale platformer powered by a living hand of poker cards. Climb the forest, play your hand, awaken Dark Red."><title>RED — The Gambler's Clearing</title><link rel="stylesheet" href="./style.css"></head>
+<body><main>
+
+<section id="stage" tabindex="0" aria-label="Platforming game. A and D move, Space jumps, Shift dashes, J attacks, K plays poker hand.">
+<canvas id="game" width="960" height="540" aria-label="Forest platforming game"></canvas>
+<nav aria-label="Game settings"><button id="sound" aria-pressed="false">Sound off</button><button id="motion" aria-pressed="true">Motion on</button><button id="pause">Pause <kbd>P</kbd></button></nav><div class="hud"><div><span class="eyebrow">HEALTH</span><div id="health" aria-label="Health"></div></div><div class="quest"><span class="eyebrow">FOREST EMBERS</span><strong id="quest">0 / 3 embers</strong></div></div>
+<div id="journey-hud"><span id="chapter-label">I · LANTERN WOOD</span><div id="trail-dots" aria-label="Journey progress"></div></div>
+<div id="dark-meter" hidden><span>DARK RED <b id="dark-time">6.0s</b></span><i></i><small>Double sword damage · faster movement</small></div>
+<div id="toast" aria-live="polite"></div>
+<section class="table" aria-label="Poker hand">
+<div class="hand-info"><p class="eyebrow">POKER HAND</p><h2 id="combo">Pair</h2><p id="effect">Heavy bolt · 14 damage</p><button id="play" class="cast-button">Play hand <kbd>K</kbd></button></div>
+<div id="hand" aria-label="Five card slots"></div>
+<div class="draw-info"><p class="eyebrow">DRAW METER</p><strong id="draw-label">Land 3 sword hits</strong><div id="pips"><i></i><i></i><i></i></div><p id="draw-help">Touch a card drop to choose your draw.</p><small id="deck-count">47 in deck · 0 spent</small></div>
+</section><div id="overlay"><div class="intro"><p class="eyebrow" id="story-eyebrow">A POKER-POWERED FAIRY TALE</p><h2 id="story-title">RED</h2><p id="story-copy">The forest has swallowed the road home.<br>Carry its lost flames. Play the hand you are dealt.</p><div id="journey-trail"><span>01 · Lantern Wood</span><i>◇</i><span>02 · Huntsman’s Bridge</span><i>◇</i><span>03 · Moss Cavern</span><i>◇</i><span>04 · Ruined Chapel</span><i>◇</i><span>05 · Thorn House</span></div><button class="primary" id="begin" disabled>Opening the forest…</button><button id="continue" hidden>Continue journey</button><small id="save-status"></small><small id="loading">Loading your cards and character</small><footer><p><kbd>A</kbd><kbd>D</kbd> move <kbd>Space</kbd> jump <kbd>Shift</kbd> dash <kbd>J</kbd> sword <kbd>K</kbd> poker <kbd>S</kbd> drop</p><div class="practice"><label for="practice">Explore / practice</label><select id="practice"><option value="0">Pair</option><option value="1">Flush → Dark Red</option><option value="2">Four of a kind → Dark Red</option><option value="3">Card drop → choose a draw</option><option value="4">Goblin runner</option><option value="5">Lantern mage</option><option value="6">Iron guard</option><option value="9">Explore The Huntsman’s Bridge</option><option value="7">Explore Moss Cavern</option><option value="8">Explore Ruined Chapel</option></select><button id="deal">Practice</button><button id="restart">Retry clearing <kbd>R</kbd></button><button id="new-journey">New journey</button></div></footer><details><summary>How do I draw cards?</summary><p>You start with five cards. Every three sword swings that hit an enemy drop one card. Touch it to pause the action and reveal two choices. Click a card or press 1 / 2 to take it; the other is discarded and play resumes. Esc leaves the pickup untouched: step away before touching it again. With a full hand, your chosen card is saved. Click a hand card or press 1–5 to replace it, or play with K to fill an empty slot with the saved card. Getting hit never takes your cards.</p><p>Pairs hit hard, two pair explodes, trips and straights pierce. Flushes and higher transform you into Dark Red for six seconds. Collect three embers in each clearing and reach its lantern. Each lantern leads straight to the next clearing with full health and a fresh hand. Runners lunge, mages commit to an aimed shot you can dodge or slash, and guards telegraph a heavy slam. New journey starts from Lantern Wood. Progress saves at clearing entrances in this browser; Continue deals a fresh hand with full health. Practice is separate from your saved journey.</p><a href="./assets/AUDIO_CREDITS.md">Audio credits</a> · <a href="./assets/ASSET_RIGHTS.md">Asset rights</a><p>Pixel font: <a href="./assets/FONT_LICENSE.txt">Silkscreen / SIL Open Font License</a>.</p></details></div></div>
+<section id="draft-overlay" hidden aria-label="Earned card choice">
+ <div class="draft-panel" role="dialog" aria-modal="true" aria-labelledby="draft-title" aria-describedby="draft-detail">
+  <p class="eyebrow">DRAW EARNED · COMBAT PAUSED</p><h2 id="draft-title">Choose your card</h2>
+  <p id="draft-detail"></p>
+  <div class="draft-options">
+   <button id="draft-left" class="draft-option"><kbd>1</kbd><canvas width="32" height="48" aria-hidden="true"></canvas><strong></strong><small></small></button>
+   <button id="draft-right" class="draft-option"><kbd>2</kbd><canvas width="32" height="48" aria-hidden="true"></canvas><strong></strong><small></small></button>
+  </div>
+  <button id="draft-skip">Leave it · Esc</button>
+ </div>
+</section>
+
+</section>
+</main><script type="module" src="./game.mjs"></script></body></html>

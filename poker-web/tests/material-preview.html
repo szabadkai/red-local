@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8"><title>Environment seam verification</title>
+<style>body{background:#101820;color:#ece0ad;font:14px monospace;margin:24px}canvas{image-rendering:pixelated;display:block;margin:16px 0;border:1px solid #477077}h2{font-size:18px}#checks{white-space:pre-wrap;line-height:1.7}</style>
+<h1>Environment seam verification</h1><p>Checks the final palette-converted surfaces used by the game, including all terrain variant pairs. Panorama joins appear at the center of each preview.</p><pre id="checks">Preparing runtime assets…</pre><main></main>
+<script type="module">
+import {prepareScenery} from '../scenery.mjs';import {TERRAIN_TILE_SIZE} from '../tiles.mjs';
+const images=new Map(),names=['forest','stone','thorn-house','oaks','moss-cavern-v2','ruined-chapel-v2','interior-props-v2','masonry-v2'];
+await Promise.all(names.map(name=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{images.set('concept-'+name,img);resolve()};img.onerror=reject;img.src='../assets/concept/'+(name==='oaks'?'parallax-oaks':name)+'.png'})));
+prepareScenery(images);const report=[];
+function canvas(title,w,h){const section=document.createElement('section');section.innerHTML=`<h2>${title}</h2><canvas width="${w}" height="${h}"></canvas>`;document.querySelector('main').append(section);return section.querySelector('canvas').getContext('2d')}
+for(const name of ['moss-cavern-v2','ruined-chapel-v2']){
+ const image=images.get('paint-'+name),w=image.width,h=image.height,ctx=image.getContext('2d'),data=ctx.getImageData(0,0,w,h).data;
+ let mismatches=0;for(let y=0;y<h;y++)for(let c=0;c<4;c++)if(data[(y*w)*4+c]!==data[(y*w+w-1)*4+c])mismatches++;
+ report.push(`${name}: ${mismatches===0?'PASS':'FAIL'} — ${mismatches} differing edge channels`);
+ const out=canvas(name+' · repeated join',w,h);out.drawImage(image,-w/2,0);out.drawImage(image,w/2,0);
+}
+const size=TERRAIN_TILE_SIZE;
+for(const theme of ['cave','chapel']){
+ const atlas=images.get('tiles-'+theme),ctx=atlas.getContext('2d'),tiles=Array.from({length:9},(_,i)=>ctx.getImageData(i*size,0,size,size).data);let mismatches=0;
+ for(const a of tiles)for(const b of tiles)for(let p=0;p<size;p++)for(let c=0;c<4;c++){
+  if(a[(p*size+size-1)*4+c]!==b[(p*size)*4+c])mismatches++;
+  if(a[((size-1)*size+p)*4+c]!==b[p*4+c])mismatches++;
+ }
+ report.push(`${theme}: ${mismatches===0?'PASS':'FAIL'} — 81 variant pairs, both axes, ${mismatches} differing edge channels`);
+ const out=canvas(theme+' · mixed 3 × 3 terrain variants',size*6,size*6);out.imageSmoothingEnabled=false;
+ for(let i=0;i<9;i++)out.drawImage(atlas,i*size,0,size,size,i%3*size*2,Math.floor(i/3)*size*2,size*2,size*2);
+}
+document.getElementById('checks').textContent=report.join('\n');
+</script>

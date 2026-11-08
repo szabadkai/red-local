@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8"><title>Dark Red animation review</title>
+<style>@font-face{font-family:Silkscreen;src:url('../assets/Silkscreen-Regular.ttf')}body{margin:24px;background:#14262d;color:#e8e1b9;font:14px Silkscreen,monospace}h1{font-size:24px}h2{font-size:14px}canvas{image-rendering:pixelated;width:960px;max-width:100%;display:block;border:2px solid #6c8174;margin-bottom:24px}button{font:inherit;background:#293c40;border:2px solid #6c8174;color:#e8e1b9;padding:8px;margin-bottom:16px}</style>
+<h1>Dark Red — corrected animation pass</h1><p>Original character art · fixed foot pivots · contact-timed slash · both transformation directions</p>
+<h2>Live sequence: transform, sword, dash, jump, turn, return to light</h2><button id="pause">Pause sequence</button><canvas id="live" width="480" height="135"></canvas>
+<h2>Light → Dark</h2><canvas id="enter" width="480" height="100"></canvas>
+<h2>Dark Red: idle · run · jump · dash · sword contact · cast contact</h2><canvas id="poses" width="480" height="100"></canvas>
+<h2>Dark → Light</h2><canvas id="exit" width="480" height="100"></canvas>
+<script type="module">
+import {PLAYER_CLIPS,playerClip,playerFrame} from '../animation.mjs';import {playerOffset} from '../art.mjs';import {World} from '../model.mjs';
+const images=new Map(),pending=[];
+for(const form of ['light','dark'])for(const [state,[count,prefix]] of Object.entries(PLAYER_CLIPS))for(let i=0;i<count;i++){
+ pending.push(new Promise((resolve,reject)=>{
+  const im=new Image();im.onload=()=>{images.set(`${form}/${state}/${i}`,im);resolve()};im.onerror=reject;
+  im.src=`../assets/${form}/${state}/${prefix}${form==='light'&&state==='attack3'?String(i).padStart(2,'0'):i}.png`;
+ }));
+}
+await Promise.all(pending);await document.fonts.ready;
+function base(id){const ctx=document.getElementById(id).getContext('2d');ctx.imageSmoothingEnabled=false;ctx.fillStyle='#263d43';ctx.fillRect(0,0,480,200);return ctx}
+function pose(ctx,form,state,index,x,y,facing=1){const im=images.get(`${form}/${state}/${index}`),offset=playerOffset(form,state,im.width,im.height);ctx.save();ctx.translate(x,y);ctx.scale(facing,1);ctx.drawImage(im,offset.x/2,offset.y/2);ctx.restore()}
+function line(ctx,x,y){ctx.fillStyle='#63796f';ctx.fillRect(x-20,y,68,1);ctx.fillStyle='#3e5958';ctx.fillRect(x,y-65,1,65)}
+for(const [id,form] of [['enter','light'],['exit','dark']]){const ctx=base(id);[0,10,20,25,33,37].forEach((frame,i)=>{const x=32+i*78;line(ctx,x,80);pose(ctx,form,'transform',frame,x,80);ctx.fillStyle='#e8e1b9';ctx.font='6px Silkscreen';ctx.fillText(String(frame),x-2,94)})}
+{const ctx=base('poses');[['idle_blink',2],['run',3],['jump',3],['dash',1],['attack1',1],['attack3',1]].forEach(([state,frame],i)=>{const x=32+i*78;line(ctx,x,80);pose(ctx,'dark',state,frame,x,80)})}
+let w,clock=0,age=0,lastKey='',previous=0,paused=false,acc=0;function reset(){w=new World();w.practiceDeal(1);w.enemies=[];clock=0;age=0;lastKey=''}reset();
+document.getElementById('pause').onclick=()=>{paused=!paused;document.getElementById('pause').textContent=paused?'Resume sequence':'Pause sequence'};
+function frame(now){const dt=Math.min(.05,(now-previous)/1000||0);previous=now;if(!paused){acc+=dt;while(acc>=1/60){const old=clock;clock+=1/60;const crossed=t=>old<t&&clock>=t;if(crossed(.5))w.play();if(crossed(1.5)||crossed(4.5))w.sword();if(crossed(2.3))w.startDash();if(crossed(3.1))w.jump();if(crossed(4.3))w.facing=-1;w.step(1/60);age+=1/60;acc-=1/60;if(clock>8)reset()}}
+const ctx=base('live'),clip=playerClip(w),key=clip.form+'/'+clip.state;if(key!==lastKey){lastKey=key;age=0}line(ctx,240,115);pose(ctx,clip.form,clip.state,playerFrame(clip.state,w,age),240,115-(420-w.y)/2,clip.facing);ctx.fillStyle='#e8e1b9';ctx.font='8px Silkscreen';ctx.fillText(key.toUpperCase(),12,18);ctx.fillText(w.dark.toFixed(1)+'s',410,18);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+</script>

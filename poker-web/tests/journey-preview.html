@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>Journey scenery review</title>
+<style>@font-face{font-family:Silkscreen;src:url('../assets/Silkscreen-Regular.ttf')}body{margin:20px;background:#0c181d;color:#e3d2a7;font:12px Silkscreen,monospace}canvas{display:block;width:960px;max-width:100%;image-rendering:pixelated;border:2px solid #8a805e}section{margin-bottom:24px}h2{font-size:16px}p{color:#9eaf9d}</style>
+<h1>The road home — scenery review</h1><p>Static art fixtures. Route reachability is exercised separately by journey.test.mjs.</p><p><button id="pan">Pan camera 40px</button> <button id="reset">Reset camera</button></p><main></main>
+<script type="module">
+import {World} from '../model.mjs';import {drawTerrain,drawHome} from '../environment.mjs';import {prepareScenery,drawBackdrop,drawLandmarks,drawTrailGate,drawForeground} from '../scenery.mjs';
+const images=new Map();const sources={terrain:'environment/terrain.png',gothic:'environment/gothic.png',cave:'environment/cave.png',dungeon:'dungeon.png',forest7:'forest/7.png',forest5:'forest/5.png'};
+for(const key of ['forest','stone','thorn-house','oaks','moss-cavern-v2','ruined-chapel-v2','interior-props-v2','masonry-v2'])sources['concept-'+key]='concept/'+(key==='oaks'?'parallax-oaks':key)+'.png';
+await Promise.all(Object.entries(sources).map(([key,url])=>new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>{images.set(key,image);resolve()};image.onerror=reject;image.src='../assets/'+url})));
+await document.fonts.ready;prepareScenery(images);
+const views=[];let offset=0;
+for(const [stage,base] of [[0,0],[1,620],[2,620],[3,1200],[4,1440]]){
+ const world=new World();world.reset(stage);world.collected=3;world.checkpointId=3;
+ const section=document.createElement('section');section.innerHTML=`<h2>${world.clearing.name}</h2><canvas width="480" height="200"></canvas>`;document.querySelector('main').append(section);
+ const ctx=section.querySelector('canvas').getContext('2d');views.push(()=>{const cam=Math.min(1440,base+offset);ctx.save();ctx.clearRect(0,0,480,200);ctx.imageSmoothingEnabled=false;ctx.scale(.5,.5);ctx.translate(0,-80);
+ drawBackdrop(ctx,images,cam,0,false,world.clearing.theme);ctx.save();ctx.translate(-cam,0);drawTerrain(ctx,images,world.platforms,0,true,world.clearing.theme);drawLandmarks(ctx,images,world,0,true);
+ if(world.clearing.theme==='house')drawHome(ctx,images,3,0,true);else drawTrailGate(ctx,images,world,0,true);ctx.restore();drawForeground(ctx,images,cam,world,false);ctx.restore();});
+}
+const render=()=>views.forEach(draw=>draw());document.getElementById('pan').onclick=()=>{offset+=40;render()};document.getElementById('reset').onclick=()=>{offset=0;render()};render();
+</script>

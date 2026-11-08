@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><title>Character pixel scale review</title>
+<style>body{background:#17252b;color:#f2ddb1;font:16px monospace;margin:24px}canvas{image-rendering:pixelated;display:block;border:1px solid #687356;margin:20px 0}table{border-collapse:collapse}td,th{padding:8px 20px;border:1px solid #477077}</style>
+<h1>Character pixel scale review</h1><p>Each source pixel is displayed at the same pitch. White marks align the feet.</p><canvas id="lineup" width="1100" height="240"></canvas><table><thead><tr><th>Character</th><th>Source frame</th><th>Opaque body bounds</th></tr></thead><tbody></tbody></table>
+<script type="module">
+import {enemySprite} from '../art.mjs';
+const load=src=>new Promise(resolve=>{const im=new Image();im.onload=()=>resolve(im);im.src=src});
+const [sheet,red,dark]=await Promise.all(['../assets/dungeon.png','../assets/light/idle_blink/idle_blink0.png','../assets/dark/idle_blink/idle_blink2.png'].map(load));
+const entries=[['Red',red,{x:0,y:0,w:red.width,h:red.height}],['Dark Red',dark,{x:0,y:0,w:dark.width,h:dark.height}],...['scout','brute','runner','mage','guard'].map(kind=>[kind,sheet,enemySprite({kind,id:0,state:'idle',walk:0},0)])];
+const ctx=document.getElementById('lineup').getContext('2d');ctx.imageSmoothingEnabled=false;
+entries.forEach(([name,img,f],i)=>{
+ const c=document.createElement('canvas');c.width=f.w;c.height=f.h;const cctx=c.getContext('2d');cctx.drawImage(img,f.x,f.y,f.w,f.h,0,0,f.w,f.h);const {data}=cctx.getImageData(0,0,f.w,f.h);let x0=f.w,x1=0,y0=f.h,y1=0;
+ for(let y=0;y<f.h;y++)for(let x=0;x<f.w;x++)if(data[(y*f.w+x)*4+3]){x0=Math.min(x,x0);x1=Math.max(x1,x+1);y0=Math.min(y,y0);y1=Math.max(y1,y+1)}
+ document.querySelector('tbody').insertAdjacentHTML('beforeend',`<tr><td>${name}</td><td>${f.w} × ${f.h}</td><td>${x1-x0} × ${y1-y0}; padding top ${y0}, bottom ${f.h-y1}</td></tr>`);
+ const x=75+i*155;ctx.fillStyle='#f2ddb1';ctx.fillRect(x-40,190,80,1);ctx.font='16px monospace';ctx.fillText(name,x-40,220);ctx.drawImage(c,x-f.w*2,190-f.h*4,f.w*4,f.h*4);
+});
+</script>

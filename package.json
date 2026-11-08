@@ -7,7 +7,10 @@
     "build": "npm --prefix ridingHood-web run build && node Scripts/copy-build.mjs",
     "test": "node --experimental-strip-types --test ridingHood-web/tests/*.test.ts",
     "start": "node tools/serve.mjs --open",
-    "play": "npm start"
+    "play": "npm start",
+    "play:poker": "npm --prefix poker-web run dev",
+    "test:poker": "npm --prefix poker-web test",
+    "build:poker": "npm --prefix poker-web run build"
   },
   "workspaces": [
     "ridingHood-web"
