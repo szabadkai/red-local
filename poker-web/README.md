@@ -81,6 +81,17 @@ canopy and foreground foliage scroll at distinct rates; Motion Off freezes the
 background planes. See assets/concept/ART_NOTES.md for prompts and provenance. The original forest music and
 dark ambience return through Sound On, and stop when paused or away.
 
+## Storybook cast
+
+Enemies and townsfolk use the Little Red Riding Hood roster from the Aseprite project
+(`assets/cast/<name>_sheet.png`: 32×32 cells, rows idle/run/attack/special/hit/death).
+`cast.mjs` keeps each behaviour (scout, brute, runner, mage, guard) and dresses it per clearing:
+wolves, hunters and boars in Lantern Wood; stag, witch and crows on the bridge; ravens, mushrooms and
+wisps in the cavern; brambles, trees and the ghost hunter in the chapel; the wolf in disguise at Thorn House.
+Windups play the attack row (mages the special row), hits flash, and corpses play the death row.
+Mother, the woodcutter and Grandmother stand at the start of the first two clearings and by the hearth,
+and speak a line when Red is near. Hitboxes and balance are unchanged.
+
 ## Files and checks
 
 - `model.mjs`: deterministic movement, level, poker, combat, and card lifecycle.

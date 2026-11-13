@@ -1,5 +1,7 @@
 import {updateEnemies,updateEnemyShots,ENEMY_TYPES} from './enemies.mjs';
 import {CLEARINGS,platformsFor} from './journey.mjs';
+import {skinFor} from './cast.mjs';
+export const CORPSE_LIFE=.6;
 export const HANDS=['High card','Pair','Two pair','Three of a kind','Straight','Flush','Full house','Four of a kind','Straight flush'];
 export const DAMAGE=[6,14,20,26,32,40,52,64,90];
 export const EFFECTS=['Quick bolt','Heavy bolt','Explosive shot','Piercing lance','Piercing beam','Dark wave','Twin dark waves','Royal burst','Royal burst + wave'];
@@ -63,6 +65,7 @@ export class World{
   this.platforms=platformsFor(stageIndex);this.embers=this.clearing.embers.map(([x,y])=>({x,y}));this.collected=0;
   this.checkpoint={x:60,y:420};this.checkpointId=0;this.mode='playing';this.practice=false;this.kills=0;
   this.impacts=[];this.corpses=[];this.bolts=[];this.enemyShots=[];this.rings=[];this.texts=[];this.particles=[];this.events=[];this.banner='';this.bannerTime=0;this.nextId=0;
+  this.npcs=(this.clearing.npcs||[]).map(([x,s,skin,line])=>({x,y:this.platforms[s].y,skin,line}));
   this.enemies=[];
   for(const [x,s,t] of this.clearing.enemies)this.spawn(x,s,t||false);
  }
@@ -71,8 +74,8 @@ export class World{
   this.reset(this.stageIndex+1);this.banner=this.clearing.name.toUpperCase();this.bannerTime=2.8;return true;
  }
  retry(){this.reset(this.stageIndex);}
- spawn(x,s,type=false){const platform=this.platforms[s];if(!platform)return;const kind=typeof type==='string'?type:type?'brute':'scout',def=ENEMY_TYPES[kind];if(!def)return;const tough=kind==='brute'||kind==='guard';this.enemies.push({id:this.nextId++,kind,x,y:platform.y,left:platform.x+16,right:platform.x+platform.w-16,hp:def.hp,max:def.hp,tough,wind:0,rest:.3,flash:0,walk:0,face:-1,state:'patrol',surface:s,patrolDir:this.nextId%2?1:-1,air:false,airVX:0,vy:0,hopCD:0,action:0,strikeDir:-1,connected:false})}
- practiceDeal(kind){if(kind>=7){this.reset(kind===9?1:kind===7?2:3);this.practice=true;this.banner='EXPLORE · '+this.clearing.name.toUpperCase();this.bannerTime=3;return;}this.reset();this.practice=true;this.arena=true;this.platforms=[{id:0,x:0,y:420,w:2400,ground:true}];this.embers=[];this.x=180;this.enemies=[];this.deck.preset([[5,18,2,9,24],[0,2,5,8,11],[5,18,31,44,8]][kind]||[5,18,2,9,24]);for(let i=0;i<3;i++)this.spawn(300+i*100,0,i===2);this.banner='PRACTICE · '+evaluate(this.deck.hand).name;this.bannerTime=2;if(kind===3){this.deck.pile=this.deck.pile.filter(c=>c!==31&&c!==12);this.deck.pile.push(12,31);this.deck.hit();this.deck.hit();this.spawnCardDrop(this.deck.hit(),{x:240,y:420});this.banner='TOUCH THE CARD · CHOOSE YOUR DRAW'}if(kind>=4){this.enemies=[];this.spawn(330,0,['runner','mage','guard'][kind-4]);this.banner=['GOBLIN RUNNER · DODGE THE LUNGE','LANTERN MAGE · JUMP OR SLASH ITS SHOT','IRON GUARD · BAIT THE SLAM'][kind-4];this.bannerTime=4;}}
+ spawn(x,s,type=false){const platform=this.platforms[s];if(!platform)return;const kind=typeof type==='string'?type:type?'brute':'scout',def=ENEMY_TYPES[kind];if(!def)return;const tough=kind==='brute'||kind==='guard';const slot=this.enemies.filter(e=>e.kind===kind).length;this.enemies.push({id:this.nextId++,kind,skin:skinFor(kind,this.clearing.id,slot),x,y:platform.y,left:platform.x+16,right:platform.x+platform.w-16,hp:def.hp,max:def.hp,tough,wind:0,rest:.3,flash:0,walk:0,face:-1,state:'patrol',surface:s,patrolDir:this.nextId%2?1:-1,air:false,airVX:0,vy:0,hopCD:0,action:0,strikeDir:-1,connected:false})}
+ practiceDeal(kind){if(kind>=7){this.reset(kind===9?1:kind===7?2:3);this.practice=true;this.banner='EXPLORE · '+this.clearing.name.toUpperCase();this.bannerTime=3;return;}this.reset();this.practice=true;this.arena=true;this.platforms=[{id:0,x:0,y:420,w:2400,ground:true}];this.embers=[];this.npcs=[];this.x=180;this.enemies=[];this.deck.preset([[5,18,2,9,24],[0,2,5,8,11],[5,18,31,44,8]][kind]||[5,18,2,9,24]);for(let i=0;i<3;i++)this.spawn(300+i*100,0,i===2);this.banner='PRACTICE · '+evaluate(this.deck.hand).name;this.bannerTime=2;if(kind===3){this.deck.pile=this.deck.pile.filter(c=>c!==31&&c!==12);this.deck.pile.push(12,31);this.deck.hit();this.deck.hit();this.spawnCardDrop(this.deck.hit(),{x:240,y:420});this.banner='TOUCH THE CARD · CHOOSE YOUR DRAW'}if(kind>=4){this.enemies=[];this.spawn(330,0,['runner','mage','guard'][kind-4]);this.banner=['GOBLIN RUNNER · DODGE THE LUNGE','LANTERN MAGE · JUMP OR SLASH ITS SHOT','IRON GUARD · BAIT THE SLAM'][kind-4];this.bannerTime=4;}}
  emit(type){this.events.push(type)}
  jump(){this.buffer=.14;this.tryJump()}
  tryJump(){if(this.buffer>0&&(this.grounded||this.coyote>0)){this.vy=-430;this.grounded=false;this.coyote=0;this.buffer=0;this.emit('jump')}}
@@ -136,7 +139,7 @@ export class World{
  blast(x,y,radius,damage,dark=false,impact=null){this.rings.push({x,y,radius,dark,life:.45});for(const e of this.enemies)if(Math.hypot(e.x-x,e.y-22-y)<=radius){this.damage(e,damage,Math.sign(e.x-x)*40);this.pokerImpact(impact,e.hp<=0)}}
  damage(e,amount,push){e.hp-=amount;e.x=clamp(e.x+push,e.left,e.right);e.wind=0;e.rest=.22;e.flash=.15;e.state='stagger';this.texts.push({x:e.x,y:e.y-55,text:String(amount),life:.7});this.impacts.push({x:e.x,y:e.y-25,amount,life:.25,knockout:e.hp<=0});
   for(let i=0;i<7;i++)this.particles.push({x:e.x,y:e.y-22,vx:Math.cos(i*2.4)*90,vy:-40-i*12,life:.4});}
- removeDead(){for(const e of this.enemies)if(e.hp<=0)this.corpses.push({kind:e.kind,x:e.x,y:e.y,face:e.face,life:.32});this.kills+=this.enemies.filter(e=>e.hp<=0).length;this.enemies=this.enemies.filter(e=>e.hp>0)}
+ removeDead(){for(const e of this.enemies)if(e.hp<=0)this.corpses.push({kind:e.kind,skin:e.skin,x:e.x,y:e.y,face:e.face,life:CORPSE_LIFE});this.kills+=this.enemies.filter(e=>e.hp<=0).length;this.enemies=this.enemies.filter(e=>e.hp>0)}
  hurt(){if(this.invincible>0)return;this.health--;this.invincible=1;this.emit('player_hurt');if(this.health<=0)this.mode='dead'}
  step(dt,input={}){
   if(this.mode!=='playing')return;

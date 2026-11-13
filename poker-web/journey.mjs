@@ -4,6 +4,7 @@ export const CLEARINGS=[
   platforms:[[0,420,620,1],[740,420,700,1],[1560,420,840,1],[150,360,150],[330,300,150],[500,240,150],[870,360,140],[1030,300,150],[1210,240,150],[1660,360,140],[1840,300,140],[2020,240,140],[2200,300,160]],
   embers:[[405,282],[1280,222],[2090,222]],checkpoints:[800,1620],
   enemies:[[430,0],[450,4],[940,1,'runner'],[1120,7],[1310,8,1],[1780,2,'runner'],[2110,11,1]],
+  npcs:[[112,0,'mother','Straight to Grandmother\'s, Red.']],
   exit:{x:2310,y:300},finish:'The first lantern wakes. Beyond the trees, the old crossing waits.'},
  {id:'broken-crossing',name:"The Huntsman's Bridge",subtitle:'Across the arches, beneath the roots.',theme:'bridge',
   platforms:[[0,420,240,1,'bank'],[200,360,660,0,'bridge'],[900,420,500,1,'bank'],[1480,420,920,1,'bank'],
@@ -13,6 +14,7 @@ export const CLEARINGS=[
    [1850,300,170,0,'ruin'],[2030,240,170,0,'branch'],[2200,300,190,0,'ruin']],
   embers:[[535,222],[1220,282],[2115,222]],checkpoints:[960,1540,2040],
   enemies:[[570,1,'guard'],[785,7,'mage'],[1070,2,'runner'],[1405,12,'mage'],[1740,3,'guard'],[1940,15,'runner']],
+  npcs:[[150,0,'woodcutter','The arches won\'t hold me. Mind your step.']],
   exit:{x:2310,y:300},finish:'Light runs through the broken arches. Beneath the crossing, blue lamps mark a path through the roots.'},
  {id:'moss-cavern',name:'Moss Cavern',subtitle:'Follow the blue lamps beneath the roots.',theme:'cave',
   platforms:[[0,420,460,1],[580,420,600,1],[1300,420,500,1],[1920,420,480,1],[120,360,160],[300,300,160],[620,360,150],[790,300,150],[960,240,160],[1360,360,150],[1530,300,150],[1700,240,160],[2000,360,150],[2180,300,190]],
@@ -28,6 +30,7 @@ export const CLEARINGS=[
   platforms:[[0,420,600,1],[740,420,660,1],[1540,420,860,1],[140,360,150],[310,300,150],[480,240,160],[850,360,150],[1020,300,150],[1190,240,160],[1650,360,150],[1820,300,150],[1990,240,160],[2190,300,180]],
   embers:[[385,282],[1265,222],[2065,222]],checkpoints:[790,1600],
   enemies:[[350,0,'runner'],[385,4,'mage'],[920,1,'guard'],[1090,7],[1300,8,'mage'],[1740,2,'runner'],[1880,10,'mage'],[2070,11,'guard']],
+  npcs:[[2214,12,'grandmother','There you are, dear. Bring the flames in.']],
   exit:{x:2310,y:300},finish:'The hearth catches. Through the trees, every lantern answers. Red is home.'}
 ];
 export function platformsFor(index=0){return CLEARINGS[index].platforms.map(([x,y,w,ground,kind],id)=>({x,y,w,ground:!!ground,id,...(kind?{kind}:{})}));}

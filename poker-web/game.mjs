@@ -3,8 +3,9 @@ import {CLEARINGS,loadJourney,saveJourney} from './journey.mjs';
 import {prepareScenery,drawBackdrop,drawLandmarks,drawTrailGate,drawForeground} from './scenery.mjs';
 import {PLAYER_CLIPS,playerClip,playerFrame} from './animation.mjs';
 import {drawTerrain,drawHome} from './environment.mjs';
-import {snap,characterSize,playerOffset,enemySprite,castShape,shakeOffset} from './art.mjs';
-import {World,evaluate,EFFECTS,WIDTH,cardName} from './model.mjs';
+import {snap,characterSize,playerOffset,castShape,shakeOffset} from './art.mjs';
+import {World,evaluate,EFFECTS,WIDTH,cardName,CORPSE_LIFE} from './model.mjs';
+import {CAST,CELL,castFrame,castTop,deathFrame,idleFrame} from './cast.mjs';
 const $=id=>document.getElementById(id),canvas=$('game'),screen=canvas.getContext('2d'),raster=document.createElement('canvas');
 raster.width=960;raster.height=540;const ctx=raster.getContext('2d');
 const world=new World(),keys=new Set(),edges=new Set();let releaseJump=false,started=false,loaded=false,muted=true;
@@ -23,7 +24,7 @@ loadImage('cave','./assets/environment/cave.png');
 loadImage('terrain','./assets/environment/terrain.png');loadImage('gothic','./assets/environment/gothic.png');
 for(const name of ['forest','stone','thorn-house','oaks','moss-cavern-v2','ruined-chapel-v2','interior-props-v2','masonry-v2'])loadImage('concept-'+name,`./assets/concept/${name==='oaks'?'parallax-oaks':name}.png`);
 for(const name of ['bridge-atlas-v1','bridge-distance-v1','bridge-bough-v1'])loadImage('concept-'+name,`./assets/concept/${name}.png`);
-loadImage('cards','./assets/cards.png');loadImage('dungeon','./assets/dungeon.png');
+loadImage('cards','./assets/cards.png');loadImage('dungeon','./assets/dungeon.png');for(const name of Object.keys(CAST))loadImage('cast/'+name,`./assets/cast/${name}_sheet.png`);
 for(const name of ['attack1','attack3','transform_dark','meter_full','jump','land','player_hurt','pickup_essence','checkpoint']){let a=new Audio(`./assets/${name}.ogg`);a.volume=.16;audio.set(name,a)}
 const total=tasks.length;let done=0;tasks.forEach(p=>p.then(()=>{$('loading').textContent=`Opening the forest · ${Math.round(++done/total*100)}%`},()=>{}));
 Promise.all(tasks).then(()=>{prepareScenery(images);loaded=true;$('begin').disabled=false;$('begin').textContent='Begin journey';$('continue').hidden=!savedJourney;$('continue').textContent=savedJourney?.complete?'Replay final clearing':'Continue journey';$('save-status').textContent=savedJourney?`Saved: ${CLEARINGS[savedJourney.stage].name} · this browser`:'';$('loading').textContent='Keyboard controls · headphones welcome';updateUI(true)}).catch(err=>{$('begin').textContent='Reload to retry';$('loading').textContent=err.message;console.error(err)});
@@ -202,7 +203,8 @@ function draw(){
   rect(x-8,y-14,16,2,'#ad6262');diamond(x,y,8,'#f6dfa5');diamond(x,y,4,'#8f424d');
   rect(x-8,y-12,2,2,'#ffeab6');rect(x+6,y+10,2,2,'#ffeab6');text('CARD',x-14,y-26,10,'#fff0bc');
  }
- for(const e of world.enemies){const img=images.get('dungeon');const frame=enemySprite(e,world.time);ctx.save();ctx.translate(snap(e.x),snap(e.y));ctx.scale(e.face,1);if(e.flash>0)ctx.globalAlpha=.55;const {w,h}=characterSize(frame.w,frame.h);ctx.drawImage(img,frame.x,frame.y,frame.w,frame.h,snap(-w/2),-h,w,h);ctx.restore();rect(e.x-16,e.y-h-8,32,3,'#26322e');rect(e.x-16,e.y-h-8,32*e.hp/e.max,3,e.tough?'#bd8fe0':'#ca8072');if(e.wind>0){text(e.kind==='mage'?'CAST':e.tough?'SLAM':'!',e.x-(e.tough?20:3),e.y-h-20,12,'#ffbf80');
+ for(const n of world.npcs||[]){const f=idleFrame(visual,n.x),{w,h}=characterSize(CELL,CELL),near=Math.abs(world.x-n.x)<110&&Math.abs(world.y-n.y)<80;ctx.save();ctx.translate(snap(n.x),snap(n.y));ctx.scale(world.x<n.x?-1:1,1);ctx.drawImage(images.get('cast/'+n.skin),f.x,f.y,f.w,f.h,snap(-w/2),-h,w,h);ctx.restore();if(near&&n.line){ctx.font='12px Silkscreen, monospace';const tw=snap(ctx.measureText(n.line).width+12),top=n.y-h+castTop(n.skin)*2,bx=snap(Math.max(cam+8,Math.min(cam+952-tw,n.x-tw/2)));rect(bx,top-26,tw,20,'#101226d8');text(n.line,bx+6,top-11,12,'#fff2bf');}}
+ for(const e of world.enemies){const img=images.get('cast/'+e.skin);const frame=castFrame(e,world.time);ctx.save();ctx.translate(snap(e.x),snap(e.y));ctx.scale(e.face,1);const {w}=characterSize(frame.w,frame.h),h=(CELL-castTop(e.skin))*2;ctx.drawImage(img,frame.x,frame.y,frame.w,frame.h,snap(-w/2),-w,w,w);ctx.restore();rect(e.x-16,e.y-h-8,32,3,'#26322e');rect(e.x-16,e.y-h-8,32*e.hp/e.max,3,e.tough?'#bd8fe0':'#ca8072');if(e.wind>0){text(e.kind==='mage'?'CAST':e.tough?'SLAM':'!',e.x-(e.tough?20:3),e.y-h-20,12,'#ffbf80');
  if(e.kind==='mage'){diamond(e.x+e.face*18,e.y-24,8,'#172637');diamond(e.x+e.face*18,e.y-24,4,'#9ce6cf')}else rect(e.tough?e.x-90:e.x,e.y-3,e.tough?180:88*e.strikeDir,3,'#e58955');}
  if(e.state==='lunge'){rect(e.x-e.strikeDir*30,e.y-20,e.strikeDir*28,3,'#f1c17d')}
  if(e.state==='chase'&&e.hopCD<.1)text('•',e.x-2,e.y-h-18,10,'#caa16d');}
@@ -240,7 +242,7 @@ function draw(){
   polygon(points,'#101226');polygon(points.map(([x,y])=>[x*.8,y*.8]),'#fff2bf');polygon(points.map(([x,y])=>[x*.42,y*.42]),'#f68152');ctx.restore();
   if(hit.amount>=14){const word=hit.knockout?'K.O.!':hit.amount>=40?'KRAK!':'WHAM!',x=snap(hit.x-34),y=snap(hit.y-54-progress*10);for(const [dx,dy] of [[-2,0],[2,0],[0,-2],[0,2]])text(word,x+dx,y+dy,24,'#101226');text(word,x,y,24,'#fff2bf');}
  }
- for(const dead of world.corpses){ctx.save();ctx.translate(snap(dead.x),snap(dead.y));ctx.scale(dead.face,1);ctx.globalAlpha=dead.life/.32;const f=enemySprite({...dead,state:'stagger',id:0},visual),{w,h}=characterSize(f.w,f.h);ctx.drawImage(images.get('dungeon'),f.x,f.y,f.w,f.h,snap(-w/2),-h,w,h);ctx.restore();}
+ for(const dead of world.corpses){ctx.save();ctx.translate(snap(dead.x),snap(dead.y));ctx.scale(dead.face,1);ctx.globalAlpha=Math.min(1,dead.life/CORPSE_LIFE*3);const f=deathFrame(dead.life,CORPSE_LIFE),{w,h}=characterSize(f.w,f.h);ctx.drawImage(images.get('cast/'+dead.skin),f.x,f.y,f.w,f.h,snap(-w/2),-h,w,h);ctx.restore();}
  for(const p of world.particles)rect(p.x,p.y,3,3,'#eacd88');for(const n of world.texts)text(n.text,n.x,n.y,20,'#ffe4a2');
  // Depth foreground around the floor rather than across landing surfaces.
  ctx.restore();if(bridge)drawBridgeAtmosphere(ctx,cam,visual,reduced);else drawForeground(ctx,images,cam,world,reduced);ctx.restore();drawDock();ctx.restore();screen.imageSmoothingEnabled=false;screen.clearRect(0,0,960,540);screen.drawImage(raster,0,0,960,540);
