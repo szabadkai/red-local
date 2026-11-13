@@ -2,6 +2,7 @@
 // Atlas characters keep their original proportions. Large creatures are drawn
 // in source-pixel coordinates so their silhouettes stay crisp at every scale.
 export const STORY_IMAGES = {
+  'story-mother': './assets/cast/mother_sheet.png',
   'story-traveler': './assets/story/traveler.png',
   'story-pumpkin': './assets/story/pumpkin.png'
 };
@@ -158,18 +159,20 @@ function drawKnot(c,time) {
 function drawHuman(c,images,id,time,state) {
   const move=['walk','run','chase','lunge','approach'].includes(state),f=Math.floor(time*(move?7:3))%4;
   const x=128+(move?64:0)+f*16;
+  if(id==='mother') {
+    const img=images.get('story-mother');
+    if(img)c.drawImage(img,f*32,move?32:0,32,32,-16,-32,32,32);
+    return;
+  }
   if(id==='stranger') {
     const img=images.get('story-traveler');if(img)c.drawImage(img,(f+(move?4:0))*16,0,16,32,-8,-32,16,32);
     // Fine walking stick and a white flower connect this traveler to the garden.
     line(c,10,-17,12,-1,C.wood);rect(c,11,-21,1,6,C.leaf);rect(c,9,-23,5,3,C.cream);
     return;
   }
-  const rows={mother:0,grandma:160,pip:224,rowan:32,wren:128};
+  const rows={grandma:160,pip:224,rowan:32,wren:128};
   atlas(c,images,x,rows[id]??0,16,32,-8,-32);
-  if(id==='mother') {
-    rect(c,-3,-9,6,7,C.cream);rect(c,-4,-10,8,2,C.pale);rect(c,7,-9,7,6,C.wood);
-    line(c,7,-10,9,-13,C.gold);line(c,9,-13,13,-10,C.gold);
-  } else if(id==='grandma') {
+  if(id==='grandma') {
     // Silver hair, glasses and a shawl distinguish her from the blue mage base.
     rect(c,-5,-20,9,3,C.silver);rect(c,-6,-18,3,4,C.pale);rect(c,3,-18,3,4,C.pale);
     rect(c,-3,-16,3,2,C.ink);rect(c,1,-16,3,2,C.ink);rect(c,0,-16,1,1,C.gold);
@@ -217,7 +220,7 @@ export function drawStoryPortrait(ctx,images,id,time) {
   // Focus the visible head and torso, not the transparent 32px atlas cell.
   // Tall weapons, legs and outer spider limbs may crop; faces remain centered.
   const focus={
-    red:[0,-11],mother:[0,-8],grandma:[0,-13],pip:[0,-11],rowan:[0,-11],
+    red:[0,-11],mother:[0,-13],grandma:[0,-13],pip:[0,-11],rowan:[0,-11],
     wren:[0,-12],stranger:[0,-9],hart:[8,-30],wolf:[7,-30],widow:[0,-27],tollkeeper:[0,-27]
   }[id]??[0,-11];
   drawStoryActor(ctx,images,id,width/2-focus[0]*scale,height/2-focus[1]*scale,time,{scale});
