@@ -85,7 +85,7 @@ export class World{
  sword(){if(this.attack>0||this.mode!=='playing')return;this.attack=.32;this.swordPending=.10;this.attackFacing=this.facing;this.attackForm=this.dark>0?'dark':'light';this.morphPose=false;this.emit('attack1');}
  resolveSword(){let source=null;
   this.enemyShots=this.enemyShots.filter(b=>{const d=(b.x-this.x)*this.attackFacing;if(d>=-10&&d<76&&Math.abs(b.y-(this.y-22))<36){this.impacts.push({x:b.x,y:b.y,amount:2,life:.25});this.emit('attack3');return false;}return true;});
-  for(const e of this.enemies){let d=(e.x-this.x)*this.attackFacing;if(d>=-10&&d<76&&Math.abs(e.y-this.y)<40){this.damage(e,this.attackForm==='dark'?4:2,10*this.attackFacing);source??={x:e.x,y:e.y}}}
+  for(const e of this.enemies){let d=(e.x-this.x)*this.attackFacing;if(d>=-10&&d<76&&Math.abs(e.y-this.y)<40){if(this.damage(e,this.attackForm==='dark'?4:2,10*this.attackFacing)!==false)source??={x:e.x,y:e.y}}}
   if(source){const draft=this.deck.hit();if(draft){this.spawnCardDrop(draft,source);this.emit('meter_full');this.banner='CARD DROP · TOUCH TO CHOOSE';this.bannerTime=1.5}}this.removeDead();
  }
  spawnCardDrop(draft,source){

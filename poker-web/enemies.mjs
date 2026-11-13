@@ -39,6 +39,7 @@ function playerSurface(world){
 }
 export function updateEnemies(world,dt){
  for(const e of world.enemies){
+  if(e.boss||e.storyTarget)continue;
   const def=ENEMY_TYPES[e.kind]||ENEMY_TYPES[e.tough?'brute':'scout'];
   e.flash=Math.max(0,e.flash-dt);e.hopCD=Math.max(0,(e.hopCD||0)-dt);
   if(e.air){const oldY=e.y;e.vy+=1300*dt;e.x+=e.airVX*dt;e.y+=e.vy*dt;let landing=null;

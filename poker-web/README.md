@@ -17,6 +17,70 @@ npm test
 npm run build    # deployable dist/
 ```
 
+## Story campaign
+
+The five clearings now carry the [Red Riding Hood script](../docs/STORY_SCRIPT.md).
+Mother sends Red with a basket and Grandmother's cards. Meet the stranger, Pip,
+Rowan, and Sister Wren before confronting the Wolf in Grandmother's bedroom.
+
+| Clearing | Encounter |
+| --- | --- |
+| Lantern Wood | Briar Hart: committed charges and rising roots |
+| The Huntsman's Bridge | Tollkeeper: chain sweeps, hook slams, and moving mill platforms |
+| Moss Cavern | Rowan: a guarded duel, followed by a returning axe |
+| Ruined Chapel | Bell Widow: falling silk and low sound rings |
+| Thorn House | Wolf: bites and leaps; a playable rescue inside him; a final garden fight |
+
+Twenty dialogue scenes use the repository's supporting-character sprites,
+portraits, staged scenery, captions, and a paused simulation. Enter/Space/E
+advances; Skip scene or holding Escape skips with the same progression outcome.
+The finale ends with a playable walk home alongside Grandmother. Existing routes,
+including the bridge's lower passage, remain intact.
+
+Each boss, the swallowed rooms, and the garden have retry checkpoints. R restores
+full health and a normal fresh hand at the current encounter. Continue restores
+saved dialogue at its current line or restarts the saved encounter. On a trail,
+reload/retry begins that clearing again. Saves use `red.poker.story.v3`; older
+journeys migrate by clearing name. A saved completed journey can replay the final
+encounter. Practice never writes story progress.
+
+Every boss can be beaten with ordinary movement and sword attacks. Rowan's guard
+blocks damage and draw credit until he recovers. Rare hands and Dark Red still
+provide their normal benefits. The Explore / practice selector offers all five
+bosses independently, alongside the existing card and enemy practices.
+
+Character artwork reuses the dungeon atlas and `Assets/doc.png`. Missing large
+creatures and scene props are drawn on the native pixel grid. See
+[story asset sources](assets/story/README.md). Dialogue is captioned, without
+recorded voice acting. The campaign uses compact arenas and staged in-engine
+scenes; its timing and difficulty still need a full human playthrough.
+
+Implementation: `story.mjs` owns progression and saves; `story-data.mjs` contains
+dialogue and room layouts; `bosses.mjs` implements tells, attacks, and hazards;
+`story-art.mjs` renders characters and sets. The underlying combat simulation
+remains shared with existing card, movement, and enemy tests.
+
+Run `npm test` and `npm run build` here. The 75 tests cover the existing routes and
+mechanics plus story transitions, skip equivalence, validated saves, boss retries,
+rescue-room reachability, hazard evasion, and defeating all six boss encounters
+with a deterministic player using normal sword/movement inputs. The campaign
+transition test uses direct damage to isolate progression; the boss playthrough
+tests do not modify health or damage. These checks do not replace a full human
+balance playthrough. Have a second developer review before merging.
+
+For local visual review, open `tests/story-review.html` from the dev server. It
+uses practice state, can open every cutscene, and records an 18-second Hart fight
+using scripted keyboard inputs and the actual game canvas. It and the separate
+`tests/story-art-preview.html` are excluded from the release build.
+
+[Scripted Hart gameplay capture](../docs/poker-prototype/story-hart-demo.mp4) ·
+[Chapel scene](../docs/poker-prototype/story-chapel.jpg) ·
+[Cottage scene](../docs/poker-prototype/story-cottage.jpg).
+The recording uses normal keyboard events; it is a combat sample, not a full
+campaign playthrough. Browser QA checked dialogue advancement and skipping,
+exact-line reload/Continue, practice selection, pause/resume, death/retry,
+and the opening, cottage, chapel, and rescue-room layouts.
+
 ## Play
 
 A/D or arrows move. Hold Space for a higher jump; release for a short hop.
@@ -62,7 +126,7 @@ over; scouts can be dodged behind. A platform graph plans multi-hop routes, incl
 and dropping through one-way ledges. Every transfer obeys measured jump reach;
 unreachable surfaces do not cause teleportation.
 
-Clearing completion leads directly to the next stage. Keepsakes and their upgrades have been removed.
+In the story journey, each clearing's three embers unlock a dedicated boss room. Defeating the boss advances the story. Keepsakes and their upgrades remain removed.
 
 Three additional characters use their own idle and movement frames from the dungeon sheet: Goblin Runner (fast committed lunge, 10 HP), Lantern Mage (0.8-second tell followed by a fixed aimed shot, 18 HP), and Iron Guard (0.85-second slam tell and long recovery, 42 HP). Shots can be jumped, dashed through, or cut with a sword; parries earn no draw credit. All three use the same platform-routing graph as scouts. The practice menu offers isolated fights plus direct exploration of the two new environments.
 

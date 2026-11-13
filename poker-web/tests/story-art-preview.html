@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Red story cast and environments</title>
+<style>
+  body{margin:24px;background:#171d21;color:#dddbc8;font:14px monospace}
+  h1{font-size:20px}h2{font-size:16px;margin:28px 0 10px}
+  canvas{display:block;max-width:100%;height:auto;image-rendering:pixelated;background:#29332e}
+  .portraits{display:flex;flex-wrap:wrap;gap:8px}.portrait{text-align:center}.portrait canvas{width:96px;height:96px}
+</style>
+<h1>Red Riding Hood story art</h1>
+<p>Repository sprites at native pixel pitch; distinct silhouettes for the story bosses.</p>
+<h2>Cast and boss silhouettes</h2><canvas id="cast" width="960" height="230"></canvas>
+<h2>Dialogue portraits</h2><div class="portraits" id="portraits"></div>
+<h2>Five boss arenas</h2><div id="arenas"></div>
+<script type="module">
+import {STORY_IMAGES,drawStoryActor,drawStoryPortrait,drawStorySet} from '../story-art.mjs';
+const images=new Map(),urls={dungeon:'../assets/dungeon.png',
+  'light/idle_blink/0':'../assets/light/idle_blink/idle_blink0.png',
+  'light/idle_blink/1':'../assets/light/idle_blink/idle_blink1.png',
+  ...Object.fromEntries(Object.entries(STORY_IMAGES).map(([k,v])=>[k,'../'+v]))};
+await Promise.all(Object.entries(urls).map(([key,url])=>new Promise((resolve,reject)=>{
+  const img=new Image();img.onload=()=>{images.set(key,img);resolve()};img.onerror=reject;img.src=url;
+})));
+const ids=['red','mother','grandma','pip','rowan','wren','stranger','hart','tollkeeper','widow','wolf'];
+const cast=document.querySelector('#cast').getContext('2d'),portraits=[];
+for(const id of ids){const box=document.createElement('div');box.className='portrait';box.textContent=id;
+  const canvas=document.createElement('canvas');canvas.width=96;canvas.height=96;box.append(canvas);
+  document.querySelector('#portraits').append(box);portraits.push([id,canvas.getContext('2d')]);}
+const arenas=[];
+for(let stage=0;stage<5;stage++){const canvas=document.createElement('canvas');canvas.width=960;canvas.height=440;
+  document.querySelector('#arenas').append(canvas);arenas.push(canvas.getContext('2d'));}
+function render(now){const t=now/1000;cast.clearRect(0,0,960,230);cast.fillStyle='#73896a';cast.fillRect(0,188,960,2);
+  ids.forEach((id,i)=>{const x=i<7?42+i*64:500+(i-7)*122;drawStoryActor(cast,images,id,x,188,t,{state:i>6?'windup':'idle'});
+    cast.fillStyle='#ddd9bd';cast.font='11px monospace';cast.textAlign='center';cast.fillText(id,x,211);});
+  portraits.forEach(([id,c])=>drawStoryPortrait(c,images,id,t));
+  arenas.forEach((c,stageIndex)=>{c.clearRect(0,0,960,440);drawStorySet(c,images,{stageIndex,storyLocation:'arena',boss:{hp:50}},t);
+    c.fillStyle='#80735c';c.fillRect(0,420,960,4);drawStoryActor(c,images,'red',210,420,t);
+    drawStoryActor(c,images,['hart','tollkeeper','rowan','widow','wolf'][stageIndex],690,420,t,{facing:-1});});
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+</script>
+</html>
