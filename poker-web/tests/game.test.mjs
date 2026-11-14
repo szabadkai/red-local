@@ -50,11 +50,15 @@ test('complete authored route collects three embers and reaches lantern',()=>{
  travel(w,790,true,true);assert.equal(w.y,420);
  travel(w,850);travel(w,940,true);assert.equal(w.y,360);
  travel(w,998);travel(w,1100,true);assert.equal(w.y,300);
- travel(w,1165);travel(w,1280,true);assert.equal(w.y,240);assert.equal(w.collected,2);
+ travel(w,1165);travel(w,1280,true);assert.equal(w.y,240);
  travel(w,1345);travel(w,1620,true,true);assert.equal(w.y,420);
  travel(w,1640);travel(w,1730,true);assert.equal(w.y,360);
  travel(w,1788);travel(w,1910,true);assert.equal(w.y,300);
- travel(w,1968);travel(w,2090,true);assert.equal(w.y,240);assert.equal(w.collected,3);
+ travel(w,1968);travel(w,2090,true);assert.equal(w.y,240);assert.equal(w.collected,2);
  travel(w,2140);travel(w,2250,true);assert.equal(w.y,300);
+ for(const [x,jump,dash] of [[2340],[2540,1,1],[2580],[2680,1],[2745],[2860,1],[2925],[3040,1],[3105],[3240,1],[3345],[3480,1],[3585],[3700,1],[3765],[3855,1]])travel(w,x,!!jump,!!dash);
+ assert.equal(w.y,240);assert.equal(w.collected,3);
+ for(const [x,jump,dash] of [[3880],[4100,1,1],[4170,1],[4210],[4320,1],[4365],[4490,1],[4540],[4660,1]])travel(w,x,!!jump,!!dash);
+ assert.equal(w.y,300);
  for(let i=0;i<120&&w.mode==='playing';i++)w.step(1/60,{axis:1});assert.equal(w.mode,'won');assert.equal(w.fallCount,0);
 });

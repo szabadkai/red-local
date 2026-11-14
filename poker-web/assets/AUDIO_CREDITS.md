@@ -2,6 +2,8 @@
 
 ## Sound Effects
 
+The poker prototype synthesises its own effects (`sfx.mjs`, original to this project) and no longer plays the files below.
+
 ### 80 CC0 RPG SFX
 - License: CC0 (Public Domain)
 - Source: https://opengameart.org/content/80-cc0-rpg-sfx
@@ -13,6 +15,11 @@
 - Used for: jump, land, player hurt sounds
 
 ## Music
+
+### RED soundtrack (stage and boss themes)
+- Original to this project
+- Source: `assets/music/*.mml`, synthesised in the browser by `chip.mjs`
+- Used for: the five stage themes and five boss themes in the poker prototype
 
 ### Forest Whisper Theme
 - Author: Cleyton Kauffman

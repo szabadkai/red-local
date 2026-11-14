@@ -1,0 +1,50 @@
+; RED, stage 5: Thorn House. Grandmother's cottage, white flowers, rooms that go on too long.
+; A music-box waltz in G minor: Red's theme, slowed and bent into 3/4. Something large
+; breathes under the floor the whole time (sid1). The second half goes wrong a note at
+; a time (D flat in bar 10, the stranger's figure in bar 12).
+;   sid1  a clock tick, then the growl
+;   sid2  waltz: bass note, chord, chord
+;   sid3  music box
+tempo 100
+meter 3
+bars 16
+
+inst tick  wave=n arp=48 adsr=0,2,0,0
+inst growl wave=s adsr=14,0,11,10 filter=lp cut=110-420/2.5 res=0.85
+inst oom   wave=t adsr=0,12,5,5
+inst pah   wave=p arp=12,0 pw=20 adsr=0,10,2,4
+inst box   wave=p,t arp=12,0 pw=12 detune=6 adsr=0,22,1,12
+
+$t: @tick v3 o3 g4
+$g: @growl v12 o1
+
+; ---- sid1: tick on one, growl under beats two and three
+$1g: $t $g g2 |
+$1d: $t $g >d2< |
+$1e: $t $g >e-2< |
+$1c: $t $g >c2< |
+$1a: $t $g a-2 |
+
+sid1: q8
+sid1: $1g $1g $1d $1d $1g $1e $1d $1g
+sid1: $1e $1e $1c $1d $1g $1a $1d $1d
+
+; ---- sid2: oom-pah-pah
+$o: @oom v5 o3
+$h: @pah v9 o4
+$2g: $o g4 $h {b->d}4 {b->d}4 |
+$2d: $o d4 $h {a>d}4 {f#>c}4 |
+$2e: $o e-4 $h {gb-}4 {b->e-}4 |
+$2c: $o c4 $h {e-g}4 {g>c}4 |
+$2a: $o a-4 $h {>ce-}4 {a->c}4 |
+
+sid2: q6
+sid2: $2g $2g $2d $2d $2g $2e $2d $2g
+sid2: $2e $2e $2c $2d $2g $2a $2d $2d
+
+; ---- sid3
+sid3: @box v10 o5 l8 q8
+sid3: g4 b- >d4 e-< | >d4 <b- g4. | a4 >d <b- a4 | f#4. d4. |
+sid3: g4 b- >d4 g | g4 f e-4 <b-> | c4 <a f#4 a | g2. |
+sid3: g4 b- >e-4 d< | >e-4 d- c4.< | >c4 e- g4 f#< | >f#4 f f#4 d< |
+sid3: g4 b- >d4 e-< | >e-4 c <a-4. | a4 >c# d4 f#< | >d2.< |

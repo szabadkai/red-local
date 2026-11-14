@@ -91,7 +91,10 @@ Keyboard controls only; no touch control buttons or gamepad implementation yet.
 The card dock, health, settings and pause/help menus stay inside one 16:9 viewport.
 
 Cross five authored clearings: Lantern Wood, Broken Crossing, Moss Cavern, Ruined Chapel, and Thorn House.
-Collect three embers in each and reach its lantern. Checkpoint posts preserve your
+Each is 4800 units long, in four sections closed off by briar gates. A gate opens once every foe
+before it has fallen and restores one heart; foes behind a closed gate stay dormant and cannot be hit.
+Collect three embers in each, clear the last section, and reach its lantern. Retrying after a death
+returns to the last opened gate with the earlier sections still cleared. Checkpoint posts preserve your
 position after pits (falling costs a heart). Movement uses fixed 60 Hz updates,
 120 ms coyote time, a 140 ms jump buffer, variable jump height, ground/air
 acceleration, and a brief invulnerable dash. Blur or hiding the tab pauses and
@@ -153,8 +156,19 @@ Enemies and townsfolk use the Little Red Riding Hood roster from the Aseprite pr
 wolves, hunters and boars in Lantern Wood; stag, witch and crows on the bridge; ravens, mushrooms and
 wisps in the cavern; brambles, trees and the ghost hunter in the chapel; the wolf in disguise at Thorn House.
 Windups play the attack row (mages the special row), hits flash, and corpses play the death row.
+Bowmen (rogue hunter, ghost hunter) use the ranged behaviour: they draw on the attack row and loose arrows.
 Mother, the woodcutter and Grandmother stand at the start of the first two clearings and by the hearth,
 and speak a line when Red is near. Hitboxes and balance are unchanged.
+
+Story bosses (Briar Hart, Tollkeeper, Bell Widow) use 48×48 sheets in `assets/bosses/`; the Wolf is the roster's
+own `big_bad_wolf` sheet. The boss sheets are drawn with
+the same roster generator (`lrrh_sprites/boss_gen/` in the Aseprite project). The attack row plays each
+boss's main pattern, the special row its phase-two pattern, timed from the tell and strike durations.
+The Huntsman's Bridge (`bridge-art.mjs`) places the concept pieces (chapel tower, oaks, arch span, crypt,
+mossy bough) at one shared scale on the collision surfaces and reduces them once onto the 2-unit pixel grid;
+collision surfaces are unchanged.
+Boss hits use body boxes measured from the art (`BOSS_BODY` in bosses.mjs) for the sword, bolts and blasts;
+the Tollkeeper's chain sweep is drawn and only hurts where its tip has passed. Add `?hitboxes` to the URL to see them.
 
 ## Files and checks
 

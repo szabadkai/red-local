@@ -1,4 +1,4 @@
-import {snap} from './art.mjs';
+import {snap,drawMirrored} from './art.mjs';
 import {periodicPixels,compatibleTile,TERRAIN_TILE_SIZE} from './tiles.mjs';
 
 const SCENERY_PALETTE=['101820','17252b','20343a','2b4449','38585b','477077','5b8989','83aaa0','b4c6ac','ece0ad','262128','3a2b32','543840','73424a','99504f','b76955','495241','687356','96976c','c5ad7a']
@@ -112,10 +112,10 @@ function drawInterior(ctx,images,cam,time,reduced,theme){
   rect(ctx,x,150+i*23%270,2,2,cave?'#477580':'#8b7a8c');
  }
 }
-export function drawBackdrop(ctx,images,cam,time,reduced,theme){
+export function drawBackdrop(ctx,images,cam,time,reduced,theme,width=2400){
  const viewCam=reduced?0:cam;
  if(theme==='cave'||theme==='chapel'){drawInterior(ctx,images,viewCam,time,reduced,theme);return;}
- ctx.drawImage(images.get(theme==='house'?'paint-thorn-house':'paint-forest'),snap(-viewCam*.1),48,1120,488);
+ drawMirrored(ctx,images.get(theme==='house'?'paint-thorn-house':'paint-forest'),viewCam*.1,48,1120,488);
  rect(ctx,-12,48,984,450,theme==='house'?'#1e102b60':theme==='bridge'?'#0b273d38':'#071d2428');
  // Separate transparent tree sheets move at their own depths. The distant
  // painting, low woodland and oak canopy are three independent image planes.
@@ -129,7 +129,7 @@ export function drawBackdrop(ctx,images,cam,time,reduced,theme){
  if(oak){
   // The framing sheet is not tileable: keep both cropped edges outside the
   // camera throughout the entire clearing instead of exposing a repeat seam.
-  ctx.drawImage(oak,snap(-viewCam*.46),48,1720,488);
+  ctx.drawImage(oak,snap(-viewCam*Math.min(.46,760/Math.max(1,width-960))),48,1720,488);
  }
  // Quiet motes and drifting scarlet leaves add depth without imitating pickups.
  for(let i=0;i<20;i++){
@@ -200,6 +200,27 @@ export function drawLandmarks(ctx,images,world,time,reduced){
  world.clearing.checkpoints.forEach((x,i)=>drawLantern(ctx,x,420,world.checkpointId>i,time,reduced));
  // One lamp by the starting trail, welcoming rather than collectible.
  drawLantern(ctx,96,420,true,time,reduced);
+}
+// Briar gates: five thorned strands from canopy to ground. An opened gate withers downward.
+const BRIAR={cave:['#12262c','#28555a','#83aaa0'],chapel:['#2a1f33','#593d63','#b76955'],house:['#2b1830','#5f304d','#d16e58']};
+export function drawGates(ctx,world,time,reduced){
+ const [dark,mid,bright]=BRIAR[world.clearing.theme]||['#2a1418','#6e3540','#c8352f'],held=world.wall;
+ for(const g of world.gates){
+  const wither=g.open?Math.min(1,g.age/.5):0;if(wither>=1)continue;
+  const top=80+340*wither;
+  for(let s=0;s<5;s++)for(let y=416;y>=top;y-=4){
+   const row=y/4+s*3,sway=reduced?0:Math.sin(time*1.3+y*.02+s)*1.5;
+   const x=g.x+Math.sin(y*.045+s*2.1)*7+(s-2)*6+sway,side=row%8<4?1:-1;
+   rect(ctx,x-4,y,8,4,dark);rect(ctx,x-2,y,4,4,mid);
+   if(row%4===0){rect(ctx,x+side*6-2,y,4,2,mid);rect(ctx,x+side*9-1,y-2,2,2,bright);}
+   if(row%13===0)rect(ctx,x-3,y-2,6,6,bright);
+  }
+  if(g===held){
+   const n=world.foesAhead,label=`${n} ${n===1?'FOE':'FOES'}`;
+   ctx.font='12px Silkscreen, monospace';const w=snap(ctx.measureText(label).width+12);
+   rect(ctx,g.x-30-w,296,w,20,'#101226d8');ctx.fillStyle='#ffdda3';ctx.fillText(label,g.x-24-w,311);
+  }
+ }
 }
 export function drawTrailGate(ctx,images,world,time,reduced){
  const {x,y}=world.clearing.exit,ready=world.collected===3;

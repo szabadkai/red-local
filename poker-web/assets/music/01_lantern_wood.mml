@@ -1,0 +1,66 @@
+; RED, stage 1: Lantern Wood. Warm gold light, birds, the lantern road.
+; G major, lilting. States Red's theme in full (bars 1-8); every later tune bends it.
+; Second half turns to E minor: the birds stop (no more chirps) and the stranger's
+; sly chromatic figure answers twice (bars 12 and 16).
+;   sid1  soft bass, with a bird chirp or a tick in the gaps
+;   sid2  harp: broken chords
+;   sid3  flute lead, the stranger in a thin pulse
+tempo 104
+swing 54
+bars 16
+
+inst bass  wave=t adsr=0,14,9,3
+inst tick  wave=n arp=48 adsr=0,2,0,0
+inst chirp wave=t arp=48,53,50,55,52,57,48 adsr=0,7,0,0
+inst harp  wave=p arp=12,0 pw=18-40/0.6 adsr=0,16,3,6
+inst flute wave=t vib=0.2 adsr=2,12,12,5
+inst sly   wave=p pw=12 vib=0.3 slide=-1/6 adsr=0,10,9,4
+
+$b: @bass v6 o2
+$c: @chirp v3 o3 b
+$t: @tick v4 o3 g
+
+; ---- sid1 (l8): root, bird, fifth, root, tick, fifth
+$1g:  $b g4 $c $b >d< $b g4 $t $b >d< |
+$1d:  $b >d4< $c $b a $b >d4< $t $b a |
+$1em: $b e4 $c $b b $b e4 $t $b b |
+$1c:  $b >c4< $c $b g $b >c4< $t $b g |
+; second half: no birds, fewer ticks
+$2em: $b e4 r $b b $b e4 $t $b b |
+$2c:  $b >c4< r $b g $b >c4< $t $b g |
+$2am: $b a4 r $b >e< $b a4 $t $b >e< |
+$2b:  $b b4 r $b >f#< $b b4 $t $b >f#< |
+$2ad: $b a4 r $b >e< $b >d4< $t $b a |
+$2d:  $b >d4< r $b a $b >d4< $t $b a |
+
+sid1: l8 q7
+sid1: $1g $1d $1em $1d $1g $1c $1d $1g
+sid1: $2em $2c $2am $2b $2em $2c $2ad $2d
+
+; ---- sid2: harp, eighths in the first half, quarters in the second
+$hg:  o3 g >d g b >d< b g d< |
+$hd:  o3 a >d f# a >d< a f# d< |
+$hem: o3 g >e g b >e< b g e< |
+$hc:  o3 g >e g >c e c< g e< |
+$hd7: o3 a >d f# >c d c< a f#< |
+$qem: o3 b4 >e4 g4 e4< |
+$qc:  o3 g4 >c4 e4 c4< |
+$qam: o3 a4 >c4 e4 c4< |
+$qb:  o3 a4 b4 >d#4 <b4 |
+$qad: o3 a4 >c4 d4 f#4< |
+$qd:  o3 a4 >d4 f#4 d4< |
+
+sid2: @harp v10 l8 q8
+sid2: $hg $hd $hem $hd $hg $hc $hd7 $hg
+sid2: $qem $qc $qam $qb $qem $qc $qad $qd
+
+; ---- sid3: Red's theme, then its minor shadow and the stranger
+$th: g4 b >d e4 d <b | a4 >d <b a4. g | g4 b >d g4 f# e | d2 r d e f# |
+$th: g4 f# e d4 <b4> | c4 <b a b4 g4 | a4 b >c d4< f#4 | g2. r4 |
+
+sid3: @flute v7 o5 l8 q7
+sid3: $th
+sid3: e4 g b >c4 <b g | g4 >c <a g4. e | <a4> c e a4 g e |
+sid3: @sly v9 f# f f# d# <b4.> r |
+sid3: @flute v7 e4 g b >e4 d <b | >c4 <b g e4 g4 | a4 b >c d4 c <a |
+sid3: @sly v9 a g# a f# d4. r |

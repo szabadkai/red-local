@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RED sound preview</title>
+<style>
+ body{font:14px/1.5 ui-monospace,Menlo,monospace;background:#14121f;color:#d8d4e8;margin:0;padding:16px;max-width:860px}
+ h1{font-size:18px} h2{font-size:14px;margin:20px 0 6px;color:#a79fd0}
+ button{font:inherit;color:inherit;background:#2a2640;border:1px solid #4a4470;border-radius:4px;padding:5px 12px;margin:0 6px 6px 0;cursor:pointer}
+ button:hover{background:#3a3560} button.on{background:#5a3f6e;border-color:#b78fd0}
+ p{margin:4px 0 10px;color:#8f89a8}
+</style>
+<h1>RED sound preview</h1>
+<h2>Sound effects</h2>
+<p>The names are the events the game emits.</p>
+<div id="sfx"></div>
+<h2>Stage themes</h2>
+<p>Changing between stage themes crossfades.</p>
+<div id="stages"></div>
+<h2>Boss themes</h2>
+<p>Going into a boss theme waits for the next beat of what is playing, then enters under a hit.</p>
+<div id="bosses"></div>
+<h2>Transitions</h2>
+<button id="victory">Boss defeated: fanfare, then the stage theme</button>
+<button id="pause">Pause / resume</button>
+<script type="module">
+import {createMusic,STAGE_TUNES,BOSS_TUNES} from '../music.mjs';
+import {SFX} from '../sfx.mjs';
+const music=createMusic(.5,.6),$=id=>document.getElementById(id);
+let current='',stage=0,paused=false;
+const label=name=>name.replace(/^\d+_(boss_)?/,'').replaceAll('_',' ');
+function button(parent,text,click){const b=document.createElement('button');b.textContent=text;b.onclick=click;$(parent).append(b);return b;}
+function mark(){for(const b of document.querySelectorAll('[data-tune]'))b.classList.toggle('on',!paused&&b.dataset.tune===current);}
+function play(name,cue){current=name;paused=false;music.play(name,cue);mark();}
+for(const name of Object.keys(SFX))button('sfx',name,()=>music.sfx(name));
+STAGE_TUNES.forEach((name,i)=>{button('stages',`${i+1} · ${label(name)}`,()=>{stage=i;play(name)}).dataset.tune=name;});
+BOSS_TUNES.forEach((name,i)=>{button('bosses',`${i+1} · ${label(name)}`,()=>{stage=i;play(name)}).dataset.tune=name;});
+$('victory').onclick=()=>play(STAGE_TUNES[stage],'victory');
+$('pause').onclick=()=>{if(!current)return;paused=!paused;music.play(paused?'':current);mark();};
+</script>

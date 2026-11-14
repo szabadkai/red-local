@@ -38,10 +38,14 @@ function playerSurface(world){
   .sort((a,b)=>a.y-b.y)[0];
 }
 export function updateEnemies(world,dt){
+ // Foes beyond a closed briar gate keep to their side and ignore Red until it opens.
+ const wall=world.wall,held=wall?world.gates.indexOf(wall):-1;
  for(const e of world.enemies){
   if(e.boss||e.storyTarget)continue;
+  const beyond=wall&&e.section>held;
+  if(wall){const side=beyond?1:-1;if((e.x-wall.x)*side<26){e.x=wall.x+side*26;if(e.air)e.airVX=0;}}
   const def=ENEMY_TYPES[e.kind]||ENEMY_TYPES[e.tough?'brute':'scout'];
-  e.flash=Math.max(0,e.flash-dt);e.hopCD=Math.max(0,(e.hopCD||0)-dt);
+  e.flash=Math.max(0,e.flash-dt);e.hurt=Math.max(0,(e.hurt||0)-dt);e.hopCD=Math.max(0,(e.hopCD||0)-dt);
   if(e.air){const oldY=e.y;e.vy+=1300*dt;e.x+=e.airVX*dt;e.y+=e.vy*dt;let landing=null;
    if(e.vy>=0)for(const p of world.platforms){if(e.x+8>p.x&&e.x-8<p.x+p.w&&oldY<=p.y+.5&&e.y>=p.y&&(!landing||p.y<landing.y))landing=p}
    if(landing){e.air=false;e.y=landing.y;e.vy=0;e.surface=landing.id;e.left=landing.x+14;e.right=landing.x+landing.w-14;e.x=clamp(e.x,e.left,e.right);e.rest=.16;e.state='recover'}
@@ -50,7 +54,7 @@ export function updateEnemies(world,dt){
   }
   if(e.rest>0){e.rest=Math.max(0,e.rest-dt);e.state=e.flash>0?'stagger':'recover';e.wind=0;continue}
   const dx=world.x-e.x,dy=world.y-e.y;
-  const visible=Math.abs(dx)<360&&Math.abs(dy)<210;
+  const visible=!beyond&&Math.abs(dx)<360&&Math.abs(dy)<210;
   e.alert=visible?5:Math.max(0,(e.alert||0)-dt);
   const aware=visible||e.alert>0;
   const destination=playerSurface(world);
@@ -60,14 +64,14 @@ export function updateEnemies(world,dt){
    if(e.wind<=0){e.wind=0;
     if(e.kind==='mage'){
      const length=Math.hypot(e.aimX,e.aimY)||1;
-     world.enemyShots.push({x:e.x+e.strikeDir*16,y:e.y-24,vx:e.aimX/length*220,vy:e.aimY/length*220,life:2.2});e.rest=def.recovery;e.state='recover';
-    }else if(e.tough){if(Math.abs(dx)<90&&Math.abs(dy)<30)world.hurt();world.rings.push({x:e.x,y:e.y-4,radius:90,dark:false,physical:true,life:.25});e.rest=def.recovery;e.state='recover'}else{e.state='lunge';e.action=.17;e.connected=false}
+     world.enemyShots.push({x:e.x+e.strikeDir*16,y:e.y-24,vx:e.aimX/length*220,vy:e.aimY/length*220,life:2.2,arrow:!!e.arrow});e.rest=def.recovery;e.state='recover';
+    }else if(e.tough){if(Math.abs(dx)<90&&Math.abs(dy)<30)world.hurt(e.x);world.rings.push({x:e.x,y:e.y-4,radius:90,dark:false,physical:true,life:.25});e.rest=def.recovery;e.state='recover'}else{e.state='lunge';e.action=.17;e.connected=false}
    }
    continue;
   }
   if(e.state==='lunge'){
    e.x=clamp(e.x+e.strikeDir*def.lunge*dt,e.left,e.right);e.action-=dt;
-   if(!e.connected&&Math.abs(world.x-e.x)<39&&Math.abs(world.y-e.y)<32){world.hurt();e.connected=true}
+   if(!e.connected&&Math.abs(world.x-e.x)<39&&Math.abs(world.y-e.y)<32){world.hurt(e.x);e.connected=true}
    if(e.action<=0){e.rest=def.recovery;e.state='recover'}continue;
   }
   if(e.kind==='mage'&&aware&&Math.abs(dx)<310&&Math.abs(dy)<110){
@@ -82,6 +86,7 @@ export function updateEnemies(world,dt){
   e.state=aware?'chase':'patrol';
   let route=null;
   if(aware&&destination&&!sameSurface)route=nextTransfer(world.platforms,e.surface,destination.id);
+  if(route&&wall&&(route.launch-wall.x)*(route.target-wall.x)<0)route=null;
   if(route&&e.hopCD<=0&&Math.abs(e.x-route.launch)<8){
    // Commit to a measured landing point. No steering or teleporting during a jump.
    e.airVX=(route.target-e.x)/route.flight;e.vy=route.drop?0:-430;
@@ -103,7 +108,7 @@ export function updateEnemyShots(world,dt){
   // Swept point against Red's center; fast shots cannot skip between frames.
   const dx=b.x-x,dy=b.y-y,length=dx*dx+dy*dy;
   const t=length?clamp(((world.x-x)*dx+(world.y-22-y)*dy)/length,0,1):0;
-  if(Math.hypot(x+dx*t-world.x,y+dy*t-(world.y-22))<18){world.hurt();b.life=0;}
+  if(Math.hypot(x+dx*t-world.x,y+dy*t-(world.y-22))<18){world.hurt(x);b.life=0;}
   for(const p of world.platforms){if(b.x>=p.x&&b.x<=p.x+p.w&&b.y>=p.y&&b.y<=p.y+(p.ground?120:24)){b.life=0;break}}
  }
  world.enemyShots=world.enemyShots.filter(b=>b.life>0);

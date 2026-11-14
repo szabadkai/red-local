@@ -14,13 +14,13 @@ function travel(w,target,jump=false,dash=false){
  assert.fail(`Failed to reach ${target} from ${w.x},${w.y}`);
 }
 const routes=[
- [125,[220],285,[405],465,[570],[790,true],850,[940],998,[1100],1165,[1280],1345,[1620,true],1640,[1730],1788,[1910],1968,[2090],2140,[2250],2310],
- [100,[175],220,[335],390,[535],645,[770],825,[960],970,[1060],1110,[1220],1280,[1405],1470,[1595],1650,[1775],1800,[1935],1980,[2115],2180,[2290],2310],
- [120,[215],275,[385],445,[560],620,[790,true],830,[925],985,[1095],1155,[1265],1330,[1600,true],1630,[1725],1785,[1895],1955,[2065],2130,[2270],2310]
+ [125,[220],285,[405],465,[570],[790,true],850,[940],998,[1100],1165,[1280],1345,[1620,true],1640,[1730],1788,[1910],1968,[2090],2140,[2250],2340,[2540,true],2580,[2680],2745,[2860],2925,[3040],3105,[3240],3345,[3480],3585,[3700],3765,[3855],3880,[4100,true],[4170],4210,[4320],4365,[4490],4540,[4660],4710],
+ [100,[175],220,[335],390,[535],645,[770],825,[960],970,[1060],1110,[1220],1280,[1405],1470,[1595],1650,[1775],1800,[1935],1980,[2115],2180,[2290],2370,[2480],2540,[2620],2700,[2790],2850,[2960],3100,[3220],3320,[3420],3400,[3500],3590,[3680],3760,[3840],3860,[4070,true],4080,[4160],4230,[4330],4400,[4500],4570,[4680],4700],
+ [120,[215],275,[385],445,[560],620,[790,true],830,[925],985,[1095],1155,[1265],1330,[1600,true],1630,[1725],1785,[1895],1955,[2065],2130,[2270],2350,[2550,true],2570,[2660],2730,[2840],2910,[3040],3100,[3230],3300,[3410],3460,[3640,true],3670,[3760],3830,[3940],4010,[4230,true],[4310],4370,[4470],4530,[4640],4710]
 ];
 routes.splice(2,0,
- [380,440,[600],600,[695],755,[865],925,[1030],1100,[1340,true],1345,[1435],1490,[1605],1660,[1770],1780,[1950,true],1980,[2075],2135,[2255],2310],
- [130,[235],295,[405],465,[575],620,[790,true],1100,1405,[1590],1600,[1695],1755,[1865],1925,[2035],2095,[2260],2310]
+ [380,440,[600],600,[695],755,[865],925,[1030],1100,[1340,true],1345,[1435],1490,[1605],1660,[1770],1780,[1950,true],1980,[2075],2135,[2255],2350,[2550,true],2570,[2660],2730,[2840],2920,[3030],3120,[3240],3310,[3430],3510,3585,[3745],3770,[3860],3930,[4040],4110,[4240],4300,[4440],4530,[4640],4700],
+ [130,[235],295,[405],465,[575],620,[790,true],1100,1405,[1590],1600,[1695],1755,[1865],1925,[2035],2095,[2260],2350,[2460],2470,[2560],2630,[2740],2810,[2920],3080,[3200],3320,[3440],3510,[3610],3725,[3885],3930,[4040],4110,[4220],4290,[4400],4500,[4620],4690]
 );
 for(let stage=0;stage<CLEARINGS.length;stage++)test(`${CLEARINGS[stage].name}: complete route without upgrades, damage or falls`,()=>{
  const w=new World();w.reset(stage);w.enemies=[];
@@ -65,4 +65,22 @@ test('bridge lower passage reconnects with the main route without a fall',()=>{
  assert.equal(w.y,460);travel(w,620);travel(w,730,true);assert.equal(w.y,420);
  travel(w,810);travel(w,970,true);assert.equal(w.y,420);
  assert.equal(w.fallCount,0);assert.equal(w.health,5);
+});
+
+test('briar gates hold until the section is cleared, then heal a heart and stay open across a retry',()=>{
+ const w=new World(),gate=CLEARINGS[0].gates[0];
+ const beyond=w.enemies.find(e=>e.section===1),hp=beyond.hp;
+ w.x=gate-40;w.y=420;w.health=3;step(w,60,{axis:1});
+ assert.ok(w.x<gate,'the closed gate stops Red');assert.equal(w.gates[0].open,false);
+ w.damage(beyond,5,0);assert.equal(beyond.hp,hp,'foes behind the gate cannot be hit through it');
+ w.enemies=w.enemies.filter(e=>e.section>0);step(w,1);
+ assert.equal(w.gates[0].open,true);assert.equal(w.health,4);assert.equal(w.gates[1].open,false);
+ step(w,20,{axis:1});assert.ok(w.x>gate);
+ w.retry();assert.equal(w.gates[0].open,true);assert.equal(w.x,gate-40);assert.equal(w.health,5);
+ assert.ok(w.enemies.length&&w.enemies.every(e=>e.section>0));
+});
+test('the way on stays shut while foes remain in the clearing',()=>{
+ const w=new World();w.gates.forEach(g=>g.open=true);w.enemies=w.enemies.slice(-1);
+ w.collected=3;w.embers=[];w.x=w.clearing.exit.x;w.y=w.clearing.exit.y;step(w,1);assert.equal(w.mode,'playing');
+ w.enemies=[];step(w,1);assert.equal(w.mode,'won');
 });

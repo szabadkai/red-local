@@ -32,3 +32,12 @@ export function shakeOffset(time,duration,power,reduced=false){
  const [x,y]=steps[Math.floor((duration-time)*60)%steps.length],strength=power*(time/duration)**2;
  return {x:snap(x*strength),y:snap(y*strength)};
 }
+// Paintings that do not tile are laid end to end with every other copy mirrored,
+// so a long trail never scrolls past the edge of its backdrop.
+export function drawMirrored(ctx,image,offset,y,w,h){
+ for(let i=Math.floor(offset/w);i*w-offset<960;i++){
+  const x=snap(i*w-offset);
+  if(i%2){ctx.save();ctx.translate(x+w,0);ctx.scale(-1,1);ctx.drawImage(image,0,y,w,h);ctx.restore();}
+  else ctx.drawImage(image,x,y,w,h);
+ }
+}

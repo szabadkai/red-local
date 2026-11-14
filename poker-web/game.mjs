@@ -1,9 +1,12 @@
 import {drawBridgeBackdrop,drawBridgeArchitecture,drawBridgeAtmosphere,drawBriarDock} from './bridge.mjs';
 import {CLEARINGS} from './journey.mjs';
-import {StoryWorld,loadStory,saveStory} from './story.mjs';
+import {StoryWorld,loadStory,saveStory,BOSS_DEATH} from './story.mjs';
 import {STAGES,SCENES,CAST} from './story-data.mjs';
-import {STORY_IMAGES,drawStoryActor,drawStorySet,drawStoryPortrait} from './story-art.mjs';
-import {prepareScenery,drawBackdrop,drawLandmarks,drawTrailGate,drawForeground} from './scenery.mjs';
+import {STORY_IMAGES,drawStoryActor,drawStorySet,drawStoryPortrait,bedCover} from './story-art.mjs';
+import {drawHazardArt} from './arena-art.mjs';
+import {bossBox} from './bosses.mjs';
+import {createMusic,tuneFor,BOSS_TUNES} from './music.mjs';
+import {prepareScenery,drawBackdrop,drawLandmarks,drawTrailGate,drawGates,drawForeground} from './scenery.mjs';
 import {PLAYER_CLIPS,playerClip,playerFrame} from './animation.mjs';
 import {drawTerrain,drawHome} from './environment.mjs';
 import {snap,characterSize,playerOffset,castShape,shakeOffset} from './art.mjs';
@@ -14,7 +17,7 @@ raster.width=960;raster.height=540;const ctx=raster.getContext('2d');
 const world=new StoryWorld(),keys=new Set(),edges=new Set();let releaseJump=false,started=false,loaded=false,muted=true;
 let reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,cam=0,accumulator=0,last=0,visual=0,hover=-1,toast='';
 let previousMode='ready',lastHand='',formClock=0,lastAnim='',cameraSnap=true,lastDraft=null;
-const images=new Map(),audio=new Map(),cards=new Map();
+const images=new Map(),cards=new Map();
 const storage={getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)};
 let savedJourney=loadStory(storage),persistedCompletion=false,lastStoryRevision=-1,lastSceneLine="",skipHeld=0,skipStarted=null;
 const defs=PLAYER_CLIPS;
@@ -28,15 +31,14 @@ loadImage('terrain','./assets/environment/terrain.png');loadImage('gothic','./as
 for(const name of ['forest','stone','thorn-house','oaks','moss-cavern-v2','ruined-chapel-v2','interior-props-v2','masonry-v2'])loadImage('concept-'+name,`./assets/concept/${name==='oaks'?'parallax-oaks':name}.png`);
 for(const name of ['bridge-atlas-v1','bridge-distance-v1','bridge-bough-v1'])loadImage('concept-'+name,`./assets/concept/${name}.png`);
 for(const [key,url] of Object.entries(STORY_IMAGES))loadImage(key,url);
-loadImage('cards','./assets/cards.png');loadImage('dungeon','./assets/dungeon.png');for(const name of Object.keys(ROSTER))loadImage('cast/'+name,`./assets/cast/${name}_sheet.png`);
-for(const name of ['attack1','attack3','transform_dark','meter_full','jump','land','player_hurt','pickup_essence','checkpoint']){let a=new Audio(`./assets/${name}.ogg`);a.volume=.16;audio.set(name,a)}
+loadImage('cards','./assets/cards.png');loadImage('dock-branch','./assets/ui/dock_branch.png');loadImage('dock-corner','./assets/ui/dock_corner.png');loadImage('dungeon','./assets/dungeon.png');for(const name of Object.keys(ROSTER))loadImage('cast/'+name,`./assets/cast/${name}_sheet.png`);
 const total=tasks.length;let done=0;tasks.forEach(p=>p.then(()=>{$('loading').textContent=`Opening the forest · ${Math.round(++done/total*100)}%`},()=>{}));
 Promise.all(tasks).then(()=>{prepareScenery(images);loaded=true;$('begin').disabled=false;$('begin').textContent='Begin journey';$('continue').hidden=!savedJourney;$('continue').textContent=savedJourney?.complete?'Replay final encounter':'Continue journey';$('save-status').textContent=savedJourney?`Saved: ${CLEARINGS[savedJourney.stage].name} · this browser`:'';$('loading').textContent='Keyboard controls · headphones welcome';updateUI(true)}).catch(err=>{$('begin').textContent='Reload to retry';$('loading').textContent=err.message;console.error(err)});
-function sound(name){if(muted)return;let a=audio.get(name);if(a){a.currentTime=0;a.play().catch(()=>{})}}
-const musicTracks=new Map(['forest_theme','boss_theme'].map(name=>{const a=new Audio(`./assets/${name}.ogg`);a.loop=true;a.volume=.07;return [name,a]}));let musicKey='';
+function sound(name){if(!muted)music.sfx(name)}
+const music=createMusic();
 function syncMusic(){
- const next=muted||!started||world.mode==='paused'||world.mode==='dead'||document.hidden?'':['cave','chapel','house'].includes(world.clearing.theme)||world.boss?'boss_theme':'forest_theme';
- if(next===musicKey)return;for(const a of musicTracks.values())a.pause();musicKey=next;if(next)musicTracks.get(next).play().catch(()=>{});
+ const silent=muted||!started||world.mode==='paused'||world.mode==='dead'||document.hidden;
+ music.play(silent?'':tuneFor(world),world.storyPhase==='cleared'?'victory':'');if(started)music.preload(BOSS_TUNES[world.stageIndex]);
 }
 function focusGame(){if(!['drafting','cutscene'].includes(world.mode))$('stage').focus({preventScroll:true})}
 function clearInput(){skipStarted=null;skipHeld=0;keys.clear();edges.clear();releaseJump=false;accumulator=0}
@@ -75,7 +77,7 @@ $('continue').onclick=()=>{if(loaded&&savedJourney){world.reset(savedJourney.sta
 $('new-journey').onclick=()=>{if(loaded)reset(true)};
 $('restart').onclick=()=>{if(loaded)reset()};$('pause').onclick=()=>{pause();focusGame()};
 $('play').onclick=()=>{if(started&&world.mode==='playing'){world.play();updateUI(true);focusGame()}};
-$('sound').onclick=()=>{muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';$('sound').setAttribute('aria-pressed',String(!muted));if(muted)for(const a of audio.values())a.pause();else sound('meter_full');focusGame()};
+$('sound').onclick=()=>{muted=!muted;$('sound').textContent=muted?'Sound off':'Sound on';$('sound').setAttribute('aria-pressed',String(!muted));if(!muted){music.unlock();sound('meter_full')}focusGame()};
 function motion(){document.body.classList.toggle('reduced',reduced);$('motion').textContent=reduced?'Motion off':'Motion on';$('motion').setAttribute('aria-pressed',String(!reduced))}motion();
 $('motion').onclick=()=>{reduced=!reduced;motion();focusGame()};
 $('deal').onclick=()=>{if(!loaded)return;world.practiceDeal(Number($('practice').value));enterWorld()};
@@ -144,7 +146,7 @@ function updateStoryUI(){
  $('dialogue-next').textContent=world.dialogue.index===scene.lines.length-1?'Continue →':'Next →';
  const portrait=$('portrait'),pctx=portrait.getContext('2d');
  pctx.clearRect(0,0,portrait.width,portrait.height);pctx.imageSmoothingEnabled=false;
- drawStoryPortrait(pctx,images,line.speaker,0);
+ drawStoryPortrait(pctx,images,line.speaker==='grandma'&&world.dialogue.id==='wolfIntro'?'disguise':line.speaker,0);
  $('dialogue-next').focus({preventScroll:true});
 }
 function drawStoryCharacters(){
@@ -160,6 +162,7 @@ function drawStoryCharacters(){
    if(id==='red'||id===world.boss?.kind)continue;
    if(id==='grandma'&&world.dialogue.id==='wolfIntro'&&world.dialogue.index===scene.lines.length-1)id='wolf';
    const bound=world.storyPhase==='inside'&&id==='grandma',inBed=world.dialogue.id==='wolfIntro',inSilk=world.dialogue.id==='widowIntro'&&id==='wren';
+   if(inBed&&id==='grandma'){drawStoryActor(ctx,images,'disguise',744,368,visual,{facing:-1});ctx.save();ctx.scale(2,2);bedCover(ctx);ctx.restore();continue;}
    drawStoryActor(ctx,images,id,bound?820:inBed?670:inSilk?480:world.x+100+(i++)*80,bound?412:inBed?380:inSilk?356:world.y,0,{facing:-1});
   }
  }else if(world.storyPhase==='inside')drawStoryActor(ctx,images,'grandma',820,412,visual,{facing:-1});
@@ -173,15 +176,49 @@ function drawStoryCharacters(){
   const id=['stranger','pip','rowan','wren','rowan'][world.stageIndex];drawStoryActor(ctx,images,id,245,420,visual,{facing:-1});
  }
 }
+function storyFloor(){return world.storyLocation==='inside'||world.storyLocation==='arena'&&[1,4].includes(world.stageIndex);}
+// Arrow from a bowman: shaft, iron head and pale fletching on the 2-unit pixel grid.
+const tintCanvas=document.createElement('canvas');
+function tinted(img,color){
+ tintCanvas.width=img.width;tintCanvas.height=img.height;const t=tintCanvas.getContext('2d');
+ t.clearRect(0,0,img.width,img.height);t.drawImage(img,0,0);t.globalCompositeOperation='source-atop';t.fillStyle=color;t.fillRect(0,0,img.width,img.height);t.globalCompositeOperation='source-over';
+ return tintCanvas;
+}
+// Tollkeeper's chain sweep: links from his fist down to the floor and out to the travelling tip.
+function drawChainSweep(){
+ const b=world.boss;if(!b||b.pattern!=='chain'||b.state!=='strike'||b.chainTip==null)return;
+ const hx=b.x+b.face*20,hy=b.y-34,tx=b.chainTip,ty=b.y-10,n=Math.max(4,Math.ceil(Math.abs(tx-hx)/7));
+ for(let i=0;i<=n;i++){const t=i/n,x=hx+(tx-hx)*t,y=hy+(ty-hy)*Math.sqrt(t)+Math.sin(t*Math.PI)*6;rect(x-2,y-2,4,4,i%2?'#4d4b5a':'#a9a5b8');}
+ rect(tx-4,ty-6,8,4,'#e2e4ea');rect(tx+(tx>b.x?2:-6),ty-2,4,6,'#a9a5b8');
+}
+// ?hitboxes overlays boss body boxes, Red's feet and the sword reach (development aid).
+const DEBUG_HITBOX=typeof location!=='undefined'&&new URLSearchParams(location.search).has('hitboxes');
+function drawHitboxes(){
+ ctx.save();ctx.lineWidth=2;ctx.strokeStyle='#ff4dd2';
+ for(const e of world.enemies){const box=e.boss&&bossBox(e);if(box)ctx.strokeRect(box.x0,box.y0,box.x1-box.x0,box.y1-box.y0);else ctx.strokeRect(e.x-4,e.y-4,8,8);}
+ ctx.strokeStyle='#4dffea';ctx.strokeRect(world.x-9,world.y-36,18,36);
+ if(world.attack>0){const f=world.attackFacing;ctx.strokeStyle='#ffe04d';ctx.strokeRect(f>0?world.x-10:world.x-76,world.y-56,86,56);}
+ ctx.restore();
+}
+function drawArrow(b){
+ const len=Math.hypot(b.vx,b.vy)||1,ux=b.vx/len,uy=b.vy/len;
+ for(let i=-10;i<=8;i+=2)rect(b.x+ux*i,b.y+uy*i,2,2,i<-6?'#d8c9a8':'#8a6a48');
+ rect(b.x+ux*10,b.y+uy*10,2,2,'#e2e4ea');rect(b.x+ux*8-uy*2,b.y+uy*8+ux*2,2,2,'#a9a5b8');rect(b.x+ux*8+uy*2,b.y+uy*8-ux*2,2,2,'#a9a5b8');
+ rect(b.x-ux*10-uy*2,b.y-uy*10+ux*2,2,2,'#c4b49a');rect(b.x-ux*10+uy*2,b.y-uy*10-ux*2,2,2,'#c4b49a');
+}
 function drawStoryPlatforms(){
- const inside=world.storyLocation==='inside',wood=world.storyLocation==='arena'&&[1,4].includes(world.stageIndex);
- if(!inside&&!wood)return false;
+ const inside=world.storyLocation==='inside',cottage=world.storyLocation==='arena'&&world.stageIndex===4;
+ if(!storyFloor())return false;
  for(const p of world.platforms){
+  if(cottage&&!p.ground)continue;
   const depth=p.ground?120:18;
   rect(p.x,p.y,p.w,depth,inside?'#393544':'#4b3b36');
   rect(p.x,p.y,p.w,4,inside?'#a99cab':'#b69a6a');
   rect(p.x,p.y+4,p.w,4,inside?'#656071':'#6e5543');
-  for(let x=p.x+4;x<p.x+p.w-4;x+=32){
+  for(let x=p.x+4,k=0;x<p.x+p.w-4;x+=32,k++){
+   const tone=inside?['#3d3849','#35303f','#423c4e'][k%3]:['#4b3b36','#433430','#54423b'][(k*7+p.id)%3];
+   rect(x+2,p.y+8,30,depth-8,tone);rect(x+2,p.y+8,30,2,inside?'#4c465a':'#5e4a40');
+   for(let y=p.y+16+(k%3)*6;y<p.y+depth-4;y+=22)rect(x+8+(k%4)*4,y,10,2,inside?'#2e2a38':'#3a2c28');
    rect(x,p.y+8,2,depth-8,inside?'#242637':'#28282b');
    rect(x+4,p.y+10,16,2,inside?'#574b60':'#765c47');
    rect(x+20,p.y+6,2,2,'#c0ad87');
@@ -193,17 +230,11 @@ function drawStoryPlatforms(){
 function drawHazards(){
  for(const h of world.hazards||[]){
   const telegraph=h.delay>0,color=telegraph?'#f1c27b':'#d26373';
-  if(h.kind==='axe'&&!telegraph){
-   rect(h.x-18,h.y-3,36,6,'#86664e');polygon([[h.x-12,h.y-16],[h.x+6,h.y-16],[h.x+14,h.y],[h.x+6,h.y+16],[h.x-12,h.y+16]],'#c0c9c0');continue;
-  }
+  if(!telegraph){drawHazardArt(ctx,h,visual);continue;}
   if(telegraph){
    rect(h.x-h.w/2,h.y-3,h.w,3,color);
    for(let x=h.x-h.w/2;x<h.x+h.w/2;x+=16)rect(x,h.y-9,6,3,color);
    text('!',h.x-4,h.y-18,14,color);
-  }else if(h.kind==='ring'){
-   polygon([[h.x-h.w/2,h.y],[h.x-8,h.y-h.h],[h.x+8,h.y-h.h],[h.x+h.w/2,h.y]],'#b6c6d3');
-  }else{
-   for(let x=h.x-h.w/2;x<h.x+h.w/2;x+=12)polygon([[x,h.y],[x+4,h.y-h.h],[x+10,h.y]],h.kind==='silk'?'#c6bfcb':color);
   }
  }
  if(world.storyPhase==='inside'&&world.knots.every(k=>k.hp<=0)){
@@ -217,7 +248,7 @@ function updateUI(force=false){
  const trailKey=world.arena?'arena':String(world.stageIndex);
  if($('trail-dots').dataset.stage!==trailKey){$('trail-dots').dataset.stage=trailKey;$('trail-dots').innerHTML=CLEARINGS.map((c,i)=>`<i class="${!world.practice&&i<=world.stageIndex?'lit':''}" title="${c.name}"></i>`).join('');$('trail-dots').setAttribute('aria-label',`Clearing ${world.stageIndex+1} of ${CLEARINGS.length}`);}
  $('health').innerHTML=Array.from({length:5},(_,i)=>`<i class="heart ${i<world.health?'full':''}"></i>`).join('');$('health').setAttribute('aria-label',`${world.health} of 5 health`);
- $('quest').textContent=world.storyLocation==='trail'&&!world.arena?`${world.collected} / 3 embers`:world.storyPhase==='inside'?`${3-world.knots.filter(k=>k.hp>0).length} / 3 knots`:world.boss?'Boss encounter':world.storyPhase==='home'?'The road is open':'Lantern lit';
+ $('quest').textContent=world.storyLocation==='trail'&&!world.arena?`${world.collected} / 3 embers · ${world.foesAhead} ${world.foesAhead===1?'foe':'foes'} ahead`:world.storyPhase==='inside'?`${3-world.knots.filter(k=>k.hp>0).length} / 3 knots`:world.boss?'Boss encounter':world.storyPhase==='home'?'The road is open':'Lantern lit';
  const r=evaluate(world.deck.hand);$('combo').textContent=r.name;$('effect').textContent=r.tier<0?'Land sword hits to refill':`${EFFECTS[r.tier]} · ${r.damage} damage`;
  $('play').disabled=!started||world.mode!=='playing'||!world.deck.hand.length;
  $('draw-label').textContent=world.deck.banked?'Saved: '+cardName(world.deck.reserve):`Sword hits ${world.deck.hits} / 3`;
@@ -283,7 +314,7 @@ function drawEmber(e){
 }
 const cardPositions=new Map(),departing=[];
 function drawDock(){
- drawBriarDock(ctx);
+ drawBriarDock(ctx,images);
  const combo=evaluate(world.deck.hand),t=visual;
  for(const [id,p] of cardPositions)if(!world.deck.hand.includes(id)){departing.push({...p,id,time:t});cardPositions.delete(id)}
  world.deck.hand.forEach((id,i)=>{
@@ -303,14 +334,15 @@ function draw(){
  ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,960,540);ctx.save();ctx.save();ctx.beginPath();ctx.rect(0,0,960,400);ctx.clip();ctx.translate(0,-80);
  const shake=shakeOffset(world.shakeTime,world.shakeDuration,world.shakePower,reduced);ctx.translate(shake.x,shake.y);
  const bridge=world.clearing.theme==='bridge'&&!world.arena;
- if(bridge)drawBridgeBackdrop(ctx,images,cam,visual,reduced);else drawBackdrop(ctx,images,cam,visual,reduced,world.clearing.theme);
+ if(bridge)drawBridgeBackdrop(ctx,images,cam,visual,reduced);else drawBackdrop(ctx,images,cam,visual,reduced,world.clearing.theme,world.worldWidth);
  if(world.dark>0){ctx.fillStyle='#31184c36';ctx.fillRect(0,0,960,480)}
  ctx.save();ctx.translate(-snap(cam),0);
  drawStorySet(ctx,images,world,reduced?0:visual,reduced);
  if(bridge)drawBridgeArchitecture(ctx,images,world.platforms,visual,reduced);else if(!drawStoryPlatforms())drawTerrain(ctx,images,world.platforms,visual,reduced,world.clearing.theme);
  if(!world.arena){
   if(!bridge)drawLandmarks(ctx,images,world,visual,reduced);
-  if(world.clearing.theme==='house')drawHome(ctx,images,world.collected,visual,reduced);else drawTrailGate(ctx,images,world,visual,reduced);
+  if(world.clearing.theme==='house')drawHome(ctx,images,world.collected,visual,reduced,world.clearing.exit.x);else drawTrailGate(ctx,images,world,visual,reduced);
+  drawGates(ctx,world,visual,reduced);
  }
  drawStoryCharacters();
  drawHazards();
@@ -322,11 +354,14 @@ function draw(){
   rect(x-8,y-12,2,2,'#ffeab6');rect(x+6,y+10,2,2,'#ffeab6');text('CARD',x-14,y-26,10,'#fff0bc');
  }
  for(const n of (world.practice&&!world.arena&&!world.dialogue?world.npcs:[])||[]){const f=idleFrame(visual,n.x),{w,h}=characterSize(CELL,CELL),near=Math.abs(world.x-n.x)<110&&Math.abs(world.y-n.y)<80;ctx.save();ctx.translate(snap(n.x),snap(n.y));ctx.scale(world.x<n.x?-1:1,1);ctx.drawImage(images.get('cast/'+n.skin),f.x,f.y,f.w,f.h,snap(-w/2),-h,w,h);ctx.restore();if(near&&n.line){ctx.font='12px Silkscreen, monospace';const tw=snap(ctx.measureText(n.line).width+12),top=n.y-h+castTop(n.skin)*2,bx=snap(Math.max(cam+8,Math.min(cam+952-tw,n.x-tw/2)));rect(bx,top-26,tw,20,'#101226d8');text(n.line,bx+6,top-11,12,'#fff2bf');}}
- for(const e of world.enemies){if(e.boss||e.storyTarget){if(world.dialogue?.id!=='wolfIntro')drawStoryActor(ctx,images,e.kind,e.x,e.y,visual,{facing:e.face,state:e.state,flash:e.flash});continue;}const img=images.get('cast/'+e.skin);const frame=castFrame(e,world.time);ctx.save();ctx.translate(snap(e.x),snap(e.y));ctx.scale(e.face,1);const {w}=characterSize(frame.w,frame.h),h=(CELL-castTop(e.skin))*2;ctx.drawImage(img,frame.x,frame.y,frame.w,frame.h,snap(-w/2),-w,w,w);ctx.restore();rect(e.x-16,e.y-h-8,32,3,'#26322e');rect(e.x-16,e.y-h-8,32*e.hp/e.max,3,e.tough?'#bd8fe0':'#ca8072');if(e.wind>0){text(e.kind==='mage'?'CAST':e.tough?'SLAM':'!',e.x-(e.tough?20:3),e.y-h-20,12,'#ffbf80');
- if(e.kind==='mage'){diamond(e.x+e.face*18,e.y-24,8,'#172637');diamond(e.x+e.face*18,e.y-24,4,'#9ce6cf')}else rect(e.tough?e.x-90:e.x,e.y-3,e.tough?180:88*e.strikeDir,3,'#e58955');}
+ if(world.bossCorpse){const c=world.bossCorpse;ctx.save();ctx.globalAlpha=Math.min(1,(BOSS_DEATH-c.time)/.4);drawStoryActor(ctx,images,c.kind,c.x,c.y,visual,{facing:c.face,state:'dead',boss:{deadTime:c.time}});ctx.restore();}
+ for(const e of world.enemies){if(e.boss||e.storyTarget){if(world.dialogue?.id!=='wolfIntro')drawStoryActor(ctx,images,e.kind,e.x,e.y,visual,{facing:e.face,state:e.state,flash:e.flash,boss:e});continue;}const img=images.get('cast/'+e.skin);const frame=castFrame(e,world.time);ctx.save();ctx.translate(snap(e.x),snap(e.y));ctx.scale(e.face,1);const {w}=characterSize(frame.w,frame.h),h=(CELL-castTop(e.skin))*2;ctx.drawImage(img,frame.x,frame.y,frame.w,frame.h,snap(-w/2),-w,w,w);ctx.restore();rect(e.x-16,e.y-h-8,32,3,'#26322e');rect(e.x-16,e.y-h-8,32*e.hp/e.max,3,e.tough?'#bd8fe0':'#ca8072');if(e.wind>0){text(e.arrow?'AIM':e.kind==='mage'?'CAST':e.tough?'SLAM':'!',e.x-(e.tough||e.arrow?14:3),e.y-h-20,12,'#ffbf80');
+ if(e.arrow){}else if(e.kind==='mage'){diamond(e.x+e.face*18,e.y-24,8,'#172637');diamond(e.x+e.face*18,e.y-24,4,'#9ce6cf')}else rect(e.tough?e.x-90:e.x,e.y-3,e.tough?180:88*e.strikeDir,3,'#e58955');}
  if(e.state==='lunge'){rect(e.x-e.strikeDir*30,e.y-20,e.strikeDir*28,3,'#f1c17d')}
  if(e.state==='chase'&&e.hopCD<.1)text('•',e.x-2,e.y-h-18,10,'#caa16d');}
- for(const b of world.enemyShots){diamond(b.x,b.y,10,'#111d2b');diamond(b.x,b.y,7,'#8de0cf');diamond(b.x,b.y,3,'#fff0c2');}
+ drawChainSweep();
+ if(DEBUG_HITBOX)drawHitboxes();
+ for(const b of world.enemyShots){if(b.arrow){drawArrow(b);continue;}diamond(b.x,b.y,10,'#111d2b');diamond(b.x,b.y,7,'#8de0cf');diamond(b.x,b.y,3,'#fff0c2');}
  for(const e of world.embers)drawEmber(e);
 
  const clip=playerClip(world),{form,state,facing}=clip,key=form+'/'+state;
@@ -338,6 +373,8 @@ function draw(){
   const {x,y}=playerOffset(form,state,img.width,img.height),{w,h}=characterSize(img.width,img.height);
   if(world.dash>0&&!reduced){for(let i=2;i>0;i--){ctx.globalAlpha=.12*(3-i);sprite(img,x-i*14,y,w,h)}ctx.globalAlpha=1}
   sprite(img,x,y,w,h);
+  // Hurt flash: Red's silhouette goes white, then red, for the first beat of the knockback.
+  if(world.hurtTime>.24){ctx.globalAlpha=1;sprite(tinted(img,world.hurtTime>.33?'#fff4ee':'#e8434a'),x,y,w,h);}
  }
  ctx.restore();
  if(world.transform>0)effect(world.morphFrom==='light'?'FX_lighttodark':'FX_darktolight',(1-world.transform/world.morphDuration)*36,world.x,world.y,2,world.facing);
@@ -363,7 +400,7 @@ function draw(){
  for(const dead of world.corpses){ctx.save();ctx.translate(snap(dead.x),snap(dead.y));ctx.scale(dead.face,1);ctx.globalAlpha=Math.min(1,dead.life/CORPSE_LIFE*3);const f=deathFrame(dead.life,CORPSE_LIFE),{w,h}=characterSize(f.w,f.h);ctx.drawImage(images.get('cast/'+dead.skin),f.x,f.y,f.w,f.h,snap(-w/2),-h,w,h);ctx.restore();}
  for(const p of world.particles)rect(p.x,p.y,3,3,'#eacd88');for(const n of world.texts)text(n.text,n.x,n.y,20,'#ffe4a2');
  // Depth foreground around the floor rather than across landing surfaces.
- ctx.restore();if(bridge)drawBridgeAtmosphere(ctx,cam,visual,reduced);else drawForeground(ctx,images,cam,world,reduced);ctx.restore();drawDock();ctx.restore();screen.imageSmoothingEnabled=false;screen.clearRect(0,0,960,540);screen.drawImage(raster,0,0,960,540);
+ ctx.restore();if(bridge)drawBridgeAtmosphere(ctx,cam,visual,reduced);else if(!storyFloor())drawForeground(ctx,images,cam,world,reduced);ctx.restore();drawDock();ctx.restore();screen.imageSmoothingEnabled=false;screen.clearRect(0,0,960,540);screen.drawImage(raster,0,0,960,540);
 }
 function frame(now){let dt=Math.min((now-last)/1000||0, .05);last=now;if(loaded){if(started&&world.mode==='playing'){accumulator+=dt;let first=true;
   while(accumulator>=1/60){const input={axis:Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')),sword:keys.has('KeyJ')};if(first&&world.hitStop<=0){input.jump=edges.has('Space');input.jumpRelease=releaseJump;input.dash=edges.has('ShiftLeft')||edges.has('ShiftRight');input.play=edges.has('KeyK');input.drop=edges.has('KeyS')||edges.has('ArrowDown');for(let i=0;i<5;i++)if(edges.has('Digit'+(i+1)))input.replace=i;edges.clear();releaseJump=false;first=false}const before=world.time;world.step(1/60,input);const elapsed=world.time-before;visual+=elapsed;formClock+=elapsed;accumulator-=1/60}

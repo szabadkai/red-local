@@ -1,0 +1,41 @@
+; RED, stage 3: Moss Cavern. Roots through the roof, drips, hunter marks: DO NOT ANSWER.
+; A minor, slow and sparse. sid3 is the cave's echo of sid2, a dotted eighth late.
+; In the second half the echo stops repeating and answers on its own, wrong:
+; bar 10 comes back a tritone away, bar 12 with a flattened fifth.
+;   sid1  low drone, with a drip at the end of each bar
+;   sid2  the call
+;   sid3  the echo, then the thing that answers
+tempo 80
+bars 16
+
+inst drone wave=p pw=30-60/0.3 adsr=12,0,11,12 filter=lp cut=140-520/3 res=0.7
+inst drip  wave=t arp=19,12,7,0 adsr=0,7,0,4
+inst call  wave=t vib=0.2 adsr=2,14,11,10
+inst echo  wave=t vib=0.2 adsr=2,14,9,10
+inst wrong wave=p pw=14 vib=0.4 slide=-2/10 adsr=2,12,10,10
+
+$d: @drone v9 o2
+$p: @drip v4
+
+; ---- sid1: drone for three beats, one drip
+sid1: l4 q8
+sid1: $d a2. $p o6 e | $d a2. $p o6 a | $d f2. $p o6 c | $d e2. $p o5 b |
+sid1: $d a2. $p o6 e | $d a2. $p o6 g | $d >d2.< $p o6 f | $d e2. $p o6 e |
+sid1: $d b-2. $p o6 f | $d b-2. $p o6 d | $d a2. $p o6 e | $d a2. $p o6 c |
+sid1: $d b-2. $p o6 d | $d g2. $p o6 b | $d e2. $p o6 e | $d e2. $p o5 b |
+
+; ---- the call (no bar lines here: sid3 plays these off the bar)
+$ca: a4 >c8 e2 r8< r1 >f4 e8 c2 r8< r2 b4 g#4
+$ca: a4 >c8 e4 a4 g8< >e2. r4< >f4 d8 <a2 r8 g#4 b4 >e2<
+$cb: >f4 d8 <b-2 r8 >d4 <b8 g2 r8 g#4 b4 >d4 e4<
+
+sid2: @call v7 o4 l8 q8
+sid2: $ca
+sid2: b-4 >d8 f2 r8< r1 a4 >c8 e2 r8< r1
+sid2: $cb >e1<
+
+; ---- echo: 8 bars late by a dotted eighth, then 13 sixteenths of rest to get back on the bar
+sid3: @echo v3 o4 l8 q8
+sid3: r8. $ca r2. r16
+sid3: @wrong v8 o4 e4 g#8 b2 r8 | r1 | @wrong v8 o4 a4 >c8 e-2 r8< |
+sid3: @echo v3 o4 r8. $cb >e2. r16<

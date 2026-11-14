@@ -4,16 +4,18 @@ import {STAGES,SCENES,arenaPlatforms} from './story-data.mjs';
 import {makeBoss,damageBoss,updateBoss,updateHazards} from './bosses.mjs';
 
 export const STORY_SAVE_KEY='red.poker.story.v3';
+// A beaten boss plays its death row and lies there this long before the outro starts.
+export const BOSS_DEATH=2.4;
 const PHASES=['trail','boss','inside','garden','cleared','home','complete'];
 const allScenes=new Set(Object.keys(SCENES));
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export class StoryWorld extends World{
  reset(stageIndex=0,progress=null){
   super.reset(stageIndex);
-  this.storyPhase='trail';this.storyLocation='trail';this.worldWidth=2400;this.bossPractice=false;
+  this.storyPhase='trail';this.storyLocation='trail';this.worldWidth=this.width;this.bossPractice=false;
   this.seen=new Set(progress?.seen||[]);this.dialogue=null;this.boss=null;this.hazards=[];
   this.storyRevision=(this.storyRevision||0)+1;this.sceneClock=0;this.rescueClock=0;
-  this.lastEncounterX=0;this.pendingVictory=false;this.knots=[];
+  this.lastEncounterX=0;this.pendingVictory=false;this.bossCorpse=null;this.victoryDelay=0;this.knots=[];
   const phase=progress?.phase||'trail';
   if(phase==='boss'||phase==='garden')this.setupArena(phase);
   else if(phase==='inside')this.setupInside();
@@ -48,14 +50,14 @@ export class StoryWorld extends World{
   return true;
  }
  setupRoom(location){
-  this.arena=true;this.storyLocation=location;this.worldWidth=960;
+  this.arena=true;this.storyLocation=location;this.worldWidth=960;this.gates=[];
   this.platforms=arenaPlatforms(this.stageIndex,location);this.x=210;this.y=420;this.surface=0;
   this.vx=0;this.vy=0;this.grounded=true;this.coyote=.12;this.buffer=0;
   this.checkpoint={x:210,y:420};this.health=5;this.invincible=1;
   this.deck.reset();this.bolts=[];this.enemyShots=[];this.cardDrops=[];this.activeDraft=null;
   this.enemies=[];this.embers=[];this.hazards=[];this.impacts=[];this.corpses=[];this.rings=[];
   this.dark=0;this.transform=0;this.dash=0;this.attack=0;this.swordPending=0;this.cast=0;
-  this.hitStop=0;this.shakeTime=0;this.banner='';this.bannerTime=0;this.boss=null;
+  this.hitStop=0;this.shakeTime=0;this.banner='';this.bannerTime=0;this.boss=null;this.bossCorpse=null;this.victoryDelay=0;
   this.mode='playing';this.storyRevision++;
  }
  setupArena(phase='boss'){
@@ -72,8 +74,8 @@ export class StoryWorld extends World{
   this.setupRoom('home');this.storyPhase='home';this.x=180;this.collected=3;
  }
  retry(){
-  const phase=this.practice?'trail':this.storyPhase;
-  const seen=[...this.seen];this.reset(this.stageIndex,{phase:phase==='cleared'?'boss':phase,seen});
+  const phase=this.practice?'trail':this.storyPhase,open=this.practice||phase!=='trail'?0:this.gates.filter(g=>g.open).length,left=this.embers;
+  const seen=[...this.seen];this.reset(this.stageIndex,{phase:phase==='cleared'?'boss':phase,seen});this.resume(open,left);
   if(this.boss){this.banner=this.stageStory.hint;this.bannerTime=4;}
  }
  advance(){
@@ -85,12 +87,12 @@ export class StoryWorld extends World{
    const stage=clamp(kind-10,0,4);this.reset(stage,{phase:'boss',seen:['prologue']});
    this.practice=true;this.bossPractice=true;this.banner=this.stageStory.hint;this.bannerTime=5;return;
   }
-  super.practiceDeal(kind);this.dialogue=null;this.mode='playing';this.bossPractice=false;this.storyLocation='trail';
+  super.practiceDeal(kind);this.worldWidth=this.width;this.dialogue=null;this.mode='playing';this.bossPractice=false;this.storyLocation='trail';
  }
  damage(e,amount,push){
   if(e.boss)return damageBoss(this,e,amount);
   if(e.storyTarget){e.hp-=amount;e.flash=.16;this.impacts.push({x:e.x,y:e.y-20,amount,life:.25});return true;}
-  super.damage(e,amount,push);return true;
+  return super.damage(e,amount,push)!==false;
  }
  removeDead(){
   const boss=this.enemies.find(e=>e.boss&&e.hp<=0);
@@ -98,7 +100,11 @@ export class StoryWorld extends World{
   const freed=this.enemies.filter(e=>e.storyTarget&&e.hp<=0);
   this.enemies=this.enemies.filter(e=>!(e.boss&&e.hp<=0)&&!(e.storyTarget&&e.hp<=0));
   if(freed.length){this.emit('checkpoint');this.storyRevision++;}
-  super.removeDead();if(boss){this.pendingVictory=true;this.kills++;}
+  super.removeDead();if(boss){
+   this.pendingVictory=true;this.kills++;this.boss=null;this.hazards=[];this.bolts=[];this.enemyShots=[];
+   // The Wolf's first defeat leads straight into the swallowing scene; every other boss falls and stays down a moment.
+   if(!(this.stageIndex===4&&this.storyPhase==='boss')){this.bossCorpse={kind:boss.kind,x:boss.x,y:boss.y,face:boss.face,time:0};this.victoryDelay=BOSS_DEATH;}
+  }
  }
  step(dt,input={}){
   if(this.mode!=='playing')return;
@@ -115,8 +121,10 @@ export class StoryWorld extends World{
   if(this.practice&&!this.bossPractice)return;
   if(this.mode==='dead'||stopped)return;
   if(this.storyLocation!=='trail')this.x=clamp(this.x,24,936);
+  if(this.bossCorpse)this.bossCorpse.time+=dt;
+  if(this.pendingVictory&&this.victoryDelay>0){this.victoryDelay=Math.max(0,this.victoryDelay-dt);if(this.victoryDelay>0)return;}
   if(this.pendingVictory){
-   this.pendingVictory=false;this.boss=null;this.hazards=[];this.bolts=[];this.enemyShots=[];this.cardDrops=[];this.activeDraft=null;
+   this.pendingVictory=false;this.bossCorpse=null;this.boss=null;this.hazards=[];this.bolts=[];this.enemyShots=[];this.cardDrops=[];this.activeDraft=null;
    if(this.practice){this.mode='won';return;}
    if(this.stageIndex===4&&this.storyPhase==='boss'){this.setupInside();this.startScene('swallowed');}
    else{this.storyPhase='cleared';this.startScene(this.stageStory.outro);}

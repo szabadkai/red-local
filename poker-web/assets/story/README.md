@@ -6,7 +6,9 @@ Both retain their original licensing terms and are covered by the repository's
 asset rights notice. No new third-party artwork was downloaded for the story.
 
 Supporting cast also uses the already bundled `assets/dungeon.png` atlas.
-Mother uses `assets/cast/mother_sheet.png` for her scene sprite and portrait;
-its first two rows provide her idle and walking animations in 32×32 cells.
+Mother, Grandmother (`grandmother_sheet.png`), Rowan (`woodcutter_sheet.png`) and the
+wolf in Grandmother's bed (`wolf_in_disguise_sheet.png`) use the roster sheets in
+`assets/cast/` for their scene sprites and portraits: rows idle, walk and (Rowan's swing) attack
+in 32×32 cells.
 Large creature silhouettes and story props are drawn by `story-art.mjs` on the
 same two-world-unit pixel grid as the game.

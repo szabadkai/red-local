@@ -1,14 +1,14 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {StoryWorld,STORY_SAVE_KEY,loadStory,saveStory} from '../story.mjs';
+import {StoryWorld,STORY_SAVE_KEY,loadStory,saveStory,BOSS_DEATH} from '../story.mjs';
 import {SCENES,STAGES,arenaPlatforms} from '../story-data.mjs';
 import {bossInput} from './support/story-player.mjs';
 import {updateBoss,updateHazards} from '../bosses.mjs';
 const tick=(w,n,input={})=>{for(let i=0;i<n;i++)w.step(1/60,input);};
 const skip=w=>{while(w.mode==='cutscene')w.advanceDialogue(true);};
 const storage=()=>{const memory=new Map();return {memory,getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,v)};};
-function arrive(w){w.collected=3;w.embers=[];w.x=w.clearing.exit.x;w.y=w.clearing.exit.y;w.grounded=true;w.vy=0;w.step(1/60);}
-function defeat(w){w.boss.state='recover';w.damage(w.boss,w.boss.hp,0);w.removeDead();w.step(1/60);}
+function arrive(w){w.enemies=[];w.collected=3;w.embers=[];w.x=w.clearing.exit.x;w.y=w.clearing.exit.y;w.grounded=true;w.vy=0;w.step(1/60);}
+function defeat(w){w.boss.state='recover';w.damage(w.boss,w.boss.hp,0);w.removeDead();tick(w,Math.ceil(BOSS_DEATH*60)+30);}
 function walk(w,target,jump=false){
  if(jump)w.jump();
  for(let i=0;i<300;i++){
@@ -161,4 +161,14 @@ test('the cracked mill lock starts moving platforms and carries a grounded rider
  const p=w.platforms[1];w.x=p.x+50;w.y=p.y;w.surface=p.id;w.grounded=true;
  tick(w,20);assert.notEqual(p.y,360);assert.equal(w.y,p.y);assert.equal(w.surface,p.id);
  const before=p.y;w.mode='paused';tick(w,20);assert.equal(p.y,before);
+});
+
+test('a beaten boss stays down for its death row before the outro',()=>{
+ const w=new StoryWorld(()=>.5);w.reset(0,{phase:'boss',seen:['prologue']});skip(w);
+ assert.ok(w.boss);w.boss.state='recover';w.damage(w.boss,w.boss.hp,0);w.removeDead();
+ assert.equal(w.boss,null);assert.equal(w.hazards.length,0);assert.equal(w.bossCorpse?.kind,'hart');
+ tick(w,Math.floor((BOSS_DEATH-.5)*60));
+ assert.equal(w.mode,'playing');assert.ok(w.bossCorpse.time>1.4);
+ tick(w,90);
+ assert.equal(w.bossCorpse,null);assert.notEqual(w.mode,'playing');
 });

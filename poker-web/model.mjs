@@ -1,7 +1,10 @@
 import {updateEnemies,updateEnemyShots,ENEMY_TYPES} from './enemies.mjs';
-import {CLEARINGS,platformsFor} from './journey.mjs';
-import {skinFor} from './cast.mjs';
-export const CORPSE_LIFE=.6;
+import {CLEARINGS,TRAIL_WIDTH,platformsFor} from './journey.mjs';
+import {skinFor,ARCHERS} from './cast.mjs';
+import {bossBox} from './bosses.mjs';
+export const CORPSE_LIFE=1.2;
+// Enemy hit reaction: a white flash, then the hit row, readable at the game's speed.
+export const HIT_TIME=.32;
 export const HANDS=['High card','Pair','Two pair','Three of a kind','Straight','Flush','Full house','Four of a kind','Straight flush'];
 export const DAMAGE=[6,14,20,26,32,40,52,64,90];
 export const EFFECTS=['Quick bolt','Heavy bolt','Explosive shot','Piercing lance','Piercing beam','Dark wave','Twin dark waves','Royal burst','Royal burst + wave'];
@@ -54,7 +57,9 @@ export function level(){return platformsFor(0)}
 export class World{
  constructor(random=Math.random){this.deck=new Deck(random);this.reset()}
  reset(stageIndex=0){
-  this.stageIndex=stageIndex;this.clearing=CLEARINGS[stageIndex];this.arena=false;
+  this.stageIndex=stageIndex;this.clearing=CLEARINGS[stageIndex];this.arena=false;this.width=TRAIL_WIDTH;
+  // Briar gates split the trail into sections; each opens once every foe before it has fallen.
+  this.gates=this.clearing.gates.map(x=>({x,open:false,age:0}));
   this.deck.reset();this.x=60;this.y=420;this.vx=0;this.vy=0;this.facing=1;this.grounded=true;this.surface=0;
   this.coyote=.12;this.buffer=0;this.drop=0;this.health=5;this.invincible=0;this.dash=0;this.dashCD=0;
   this.attack=0;this.swordPending=0;this.attackFacing=1;this.cast=0;this.dark=0;this.transform=0;this.land=0;this.time=0;this.fallCount=0;
@@ -73,9 +78,32 @@ export class World{
   if(this.mode!=='won'||this.practice||this.stageIndex>=CLEARINGS.length-1)return false;
   this.reset(this.stageIndex+1);this.banner=this.clearing.name.toUpperCase();this.bannerTime=2.8;return true;
  }
- retry(){this.reset(this.stageIndex);}
- spawn(x,s,type=false){const platform=this.platforms[s];if(!platform)return;const kind=typeof type==='string'?type:type?'brute':'scout',def=ENEMY_TYPES[kind];if(!def)return;const tough=kind==='brute'||kind==='guard';const slot=this.enemies.filter(e=>e.kind===kind).length;this.enemies.push({id:this.nextId++,kind,skin:skinFor(kind,this.clearing.id,slot),x,y:platform.y,left:platform.x+16,right:platform.x+platform.w-16,hp:def.hp,max:def.hp,tough,wind:0,rest:.3,flash:0,walk:0,face:-1,state:'patrol',surface:s,patrolDir:this.nextId%2?1:-1,air:false,airVX:0,vy:0,hopCD:0,action:0,strikeDir:-1,connected:false})}
- practiceDeal(kind){if(kind>=7){this.reset(kind===9?1:kind===7?2:3);this.practice=true;this.banner='EXPLORE · '+this.clearing.name.toUpperCase();this.bannerTime=3;return;}this.reset();this.practice=true;this.arena=true;this.platforms=[{id:0,x:0,y:420,w:2400,ground:true}];this.embers=[];this.npcs=[];this.x=180;this.enemies=[];this.deck.preset([[5,18,2,9,24],[0,2,5,8,11],[5,18,31,44,8]][kind]||[5,18,2,9,24]);for(let i=0;i<3;i++)this.spawn(300+i*100,0,i===2);this.banner='PRACTICE · '+evaluate(this.deck.hand).name;this.bannerTime=2;if(kind===3){this.deck.pile=this.deck.pile.filter(c=>c!==31&&c!==12);this.deck.pile.push(12,31);this.deck.hit();this.deck.hit();this.spawnCardDrop(this.deck.hit(),{x:240,y:420});this.banner='TOUCH THE CARD · CHOOSE YOUR DRAW'}if(kind>=4){this.enemies=[];this.spawn(330,0,['runner','mage','guard'][kind-4]);this.banner=['GOBLIN RUNNER · DODGE THE LUNGE','LANTERN MAGE · JUMP OR SLASH ITS SHOT','IRON GUARD · BAIT THE SLAM'][kind-4];this.bannerTime=4;}}
+ retry(){const open=this.gates.filter(g=>g.open).length,left=this.embers;this.reset(this.stageIndex);this.resume(open,left);}
+ // A retry on the trail returns to the last opened gate; the sections behind it stay cleared.
+ resume(open,embers){
+  if(!open)return;
+  this.gates.slice(0,open).forEach(g=>{g.open=true;g.age=9});
+  this.enemies=this.enemies.filter(e=>e.section>=open);
+  this.embers=embers.map(e=>({...e}));this.collected=3-this.embers.length;
+  this.x=this.gates[open-1].x-40;this.checkpoint={x:this.x,y:420};
+  this.checkpointId=this.clearing.checkpoints.filter(x=>x<=this.x).length;
+ }
+ get wall(){return this.gates.find(g=>!g.open);}
+ // Foes that still hold the next gate shut (or the exit, once every gate is open).
+ get foesAhead(){const i=this.gates.findIndex(g=>!g.open);return this.enemies.filter(e=>!e.boss&&!e.storyTarget&&(i<0||e.section<=i)).length;}
+ updateGates(dt){
+  for(const g of this.gates)if(g.open)g.age+=dt;
+  const g=this.wall;if(!g)return;
+  if(this.foesAhead===0){
+   g.open=true;this.emit('checkpoint');const healed=this.health<5;if(healed)this.health++;
+   this.banner=healed?'THE BRIARS PART · +1 HEART':'THE BRIARS PART';this.bannerTime=2.2;
+  }else if(this.x>g.x-15){
+   this.x=g.x-15;this.vx=Math.min(this.vx,0);
+   if(this.bannerTime<=0){const n=this.foesAhead;this.banner=`THE BRIARS HOLD · ${n} ${n===1?'FOE':'FOES'} LEFT`;this.bannerTime=1.6;}
+  }
+ }
+ spawn(x,s,type=false){const platform=this.platforms[s];if(!platform)return;const kind=typeof type==='string'?type:type?'brute':'scout',def=ENEMY_TYPES[kind];if(!def)return;const tough=kind==='brute'||kind==='guard',section=this.gates.filter(g=>g.x<x).length;const slot=this.enemies.filter(e=>e.kind===kind).length,skin=skinFor(kind,this.clearing.id,slot);this.enemies.push({id:this.nextId++,kind,skin,section,arrow:ARCHERS.has(skin),x,y:platform.y,left:platform.x+16,right:platform.x+platform.w-16,hp:def.hp,max:def.hp,tough,wind:0,rest:.3,flash:0,walk:0,face:-1,state:'patrol',surface:s,patrolDir:this.nextId%2?1:-1,air:false,airVX:0,vy:0,hopCD:0,action:0,strikeDir:-1,connected:false})}
+ practiceDeal(kind){if(kind>=7){this.reset(kind===9?1:kind===7?2:3);this.practice=true;this.banner='EXPLORE · '+this.clearing.name.toUpperCase();this.bannerTime=3;return;}this.reset();this.practice=true;this.arena=true;this.width=WIDTH;this.gates=[];this.platforms=[{id:0,x:0,y:420,w:2400,ground:true}];this.embers=[];this.npcs=[];this.x=180;this.enemies=[];this.deck.preset([[5,18,2,9,24],[0,2,5,8,11],[5,18,31,44,8]][kind]||[5,18,2,9,24]);for(let i=0;i<3;i++)this.spawn(300+i*100,0,i===2);this.banner='PRACTICE · '+evaluate(this.deck.hand).name;this.bannerTime=2;if(kind===3){this.deck.pile=this.deck.pile.filter(c=>c!==31&&c!==12);this.deck.pile.push(12,31);this.deck.hit();this.deck.hit();this.spawnCardDrop(this.deck.hit(),{x:240,y:420});this.banner='TOUCH THE CARD · CHOOSE YOUR DRAW'}if(kind>=4){this.enemies=[];this.spawn(330,0,['runner','mage','guard'][kind-4]);this.banner=['GOBLIN RUNNER · DODGE THE LUNGE','LANTERN MAGE · JUMP OR SLASH ITS SHOT','IRON GUARD · BAIT THE SLAM'][kind-4];this.bannerTime=4;}}
  emit(type){this.events.push(type)}
  jump(){this.buffer=.14;this.tryJump()}
  tryJump(){if(this.buffer>0&&(this.grounded||this.coyote>0)){this.vy=-430;this.grounded=false;this.coyote=0;this.buffer=0;this.emit('jump')}}
@@ -85,8 +113,11 @@ export class World{
  sword(){if(this.attack>0||this.mode!=='playing')return;this.attack=.32;this.swordPending=.10;this.attackFacing=this.facing;this.attackForm=this.dark>0?'dark':'light';this.morphPose=false;this.emit('attack1');}
  resolveSword(){let source=null;
   this.enemyShots=this.enemyShots.filter(b=>{const d=(b.x-this.x)*this.attackFacing;if(d>=-10&&d<76&&Math.abs(b.y-(this.y-22))<36){this.impacts.push({x:b.x,y:b.y,amount:2,life:.25});this.emit('attack3');return false;}return true;});
-  for(const e of this.enemies){let d=(e.x-this.x)*this.attackFacing;if(d>=-10&&d<76&&Math.abs(e.y-this.y)<40){if(this.damage(e,this.attackForm==='dark'?4:2,10*this.attackFacing)!==false)source??={x:e.x,y:e.y}}}
-  if(source){const draft=this.deck.hit();if(draft){this.spawnCardDrop(draft,source);this.emit('meter_full');this.banner='CARD DROP · TOUCH TO CHOOSE';this.bannerTime=1.5}}this.removeDead();
+  for(const e of this.enemies){const box=e.boss&&bossBox(e);let hit;
+   if(box){const f=this.attackFacing,a0=f>0?this.x-10:this.x-76,a1=f>0?this.x+76:this.x+10;hit=a1>box.x0&&a0<box.x1&&this.y-56<box.y1&&this.y>box.y0;}
+   else{const d=(e.x-this.x)*this.attackFacing;hit=d>=-10&&d<76&&Math.abs(e.y-this.y)<40;}
+   if(hit){if(this.damage(e,this.attackForm==='dark'?4:2,10*this.attackFacing)!==false)source??={x:e.x,y:e.y}}}
+  if(source){this.emit('hit');const draft=this.deck.hit();if(draft){this.spawnCardDrop(draft,source);this.emit('meter_full');this.banner='CARD DROP · TOUCH TO CHOOSE';this.bannerTime=1.5}}this.removeDead();
  }
  spawnCardDrop(draft,source){
   if(!draft)return;
@@ -136,36 +167,46 @@ export class World{
   this.shakePower=frames*2-2;this.shakeDuration=.1+frames*.025;this.shakeTime=this.shakeDuration;
  }
  fire(r,dir,impact){this.bolts.push({x:this.x+dir*20,y:this.y-23,dir,damage:r.damage,tier:r.tier,life:1.5,hit:new Set(),impact})}
- blast(x,y,radius,damage,dark=false,impact=null){this.rings.push({x,y,radius,dark,life:.45});for(const e of this.enemies)if(Math.hypot(e.x-x,e.y-22-y)<=radius){this.damage(e,damage,Math.sign(e.x-x)*40);this.pokerImpact(impact,e.hp<=0)}}
- damage(e,amount,push){e.hp-=amount;e.x=clamp(e.x+push,e.left,e.right);e.wind=0;e.rest=.22;e.flash=.15;e.state='stagger';this.texts.push({x:e.x,y:e.y-55,text:String(amount),life:.7});this.impacts.push({x:e.x,y:e.y-25,amount,life:.25,knockout:e.hp<=0});
+ blast(x,y,radius,damage,dark=false,impact=null){this.rings.push({x,y,radius,dark,life:.45});for(const e of this.enemies){const box=e.boss&&bossBox(e);if(box?Math.hypot(clamp(x,box.x0,box.x1)-x,clamp(y,box.y0,box.y1)-y)<=radius:Math.hypot(e.x-x,e.y-22-y)<=radius){this.damage(e,damage,Math.sign(e.x-x)*40);this.pokerImpact(impact,e.hp<=0)}}}
+ damage(e,amount,push){if(this.wall&&e.x>this.wall.x)return false;e.hp-=amount;e.x=clamp(e.x+push,e.left,e.right);e.wind=0;e.rest=.22;e.flash=.15;e.hurt=HIT_TIME;e.state='stagger';this.texts.push({x:e.x,y:e.y-55,text:String(amount),life:.7});this.impacts.push({x:e.x,y:e.y-25,amount,life:.25,knockout:e.hp<=0});
   for(let i=0;i<7;i++)this.particles.push({x:e.x,y:e.y-22,vx:Math.cos(i*2.4)*90,vy:-40-i*12,life:.4});}
- removeDead(){for(const e of this.enemies)if(e.hp<=0)this.corpses.push({kind:e.kind,skin:e.skin,x:e.x,y:e.y,face:e.face,life:CORPSE_LIFE});this.kills+=this.enemies.filter(e=>e.hp<=0).length;this.enemies=this.enemies.filter(e=>e.hp>0)}
- hurt(){if(this.invincible>0)return;this.health--;this.invincible=1;this.emit('player_hurt');if(this.health<=0)this.mode='dead'}
+ removeDead(){if(this.enemies.some(e=>e.hp<=0))this.emit('enemy_death');for(const e of this.enemies)if(e.hp<=0)this.corpses.push({kind:e.kind,skin:e.skin,x:e.x,y:e.y,face:e.face,life:CORPSE_LIFE});this.kills+=this.enemies.filter(e=>e.hp<=0).length;this.enemies=this.enemies.filter(e=>e.hp>0)}
+ hurt(fromX){if(this.invincible>0)return;this.health--;this.invincible=1;this.emit('player_hurt');
+  const dir=fromX===undefined?-this.facing:Math.sign(this.x-fromX)||-this.facing;
+  this.vx=dir*320;this.vy=Math.min(this.vy,-250);this.grounded=false;this.dash=0;this.knock=.3;this.hurtTime=.4;
+  this.hitStop=Math.max(this.hitStop,.05);this.shakePower=4;this.shakeDuration=.18;this.shakeTime=.18;
+  if(this.health<=0)this.mode='dead'}
  step(dt,input={}){
   if(this.mode!=='playing')return;
   this.shakeTime=Math.max(0,this.shakeTime-dt);
   if(this.hitStop>0){this.hitStop=Math.max(0,this.hitStop-dt-1e-9);return;}
   this.time+=dt;const wasDark=this.dark>0;
-  for(const key of ['invincible','dash','dashCD','attack','cast','dark','transform','land','drop','buffer','bannerTime'])this[key]=Math.max(0,this[key]-dt);
+  for(const key of ['invincible','dash','dashCD','attack','cast','dark','transform','land','drop','buffer','bannerTime','knock','hurtTime'])this[key]=Math.max(0,this[key]-dt);
   if(wasDark&&this.dark===0)this.startMorph('dark',.6);
-  if(input.jump)this.jump();if(input.jumpRelease)this.releaseJump();if(input.drop)this.dropDown();if(input.dash)this.startDash();
-  const axis=clamp(input.axis||0,-1,1);if(axis)this.facing=axis>0?1:-1;
-  this.vx=this.dash>0?this.facing*570:approach(this.vx,axis*(this.dark>0?300:260),(this.grounded?2600:1700)*dt);
+  const knocked=this.knock>0;
+  if(!knocked){if(input.jump)this.jump();if(input.jumpRelease)this.releaseJump();if(input.drop)this.dropDown();if(input.dash)this.startDash();}
+  const axis=knocked?0:clamp(input.axis||0,-1,1);if(axis)this.facing=axis>0?1:-1;
+  this.vx=this.dash>0?this.facing*570:knocked?approach(this.vx,0,700*dt):approach(this.vx,axis*(this.dark>0?300:260),(this.grounded?2600:1700)*dt);
   if(this.swordPending>0){this.swordPending=Math.max(0,this.swordPending-dt);if(this.swordPending===0)this.resolveSword();}
   if(input.sword)this.sword();if(input.play)this.play();if(input.replace!==undefined)this.deck.replace(input.replace);
   this.coyote=this.grounded?.12:Math.max(0,this.coyote-dt);this.tryJump();
-  const oldX=this.x,oldY=this.y,wasGround=this.grounded;this.x=clamp(this.x+this.vx*dt,12,WIDTH-12);
+  const oldX=this.x,oldY=this.y,wasGround=this.grounded;this.x=clamp(this.x+this.vx*dt,12,this.width-12);this.updateGates(dt);
   if(!this.dash)this.vy+=1300*dt;this.y+=this.vy*dt;this.grounded=false;this.surface=-1;
   if(this.vy>=0){let landing=null;for(const p of this.platforms){if(this.drop>0&&!p.ground)continue;if(this.x+9>p.x&&this.x-9<p.x+p.w&&oldY<=p.y+.5&&this.y>=p.y&&(!landing||p.y<landing.y))landing=p}if(landing){this.y=landing.y;this.vy=0;this.grounded=true;this.surface=landing.id;if(!wasGround){this.land=.12;this.emit('land')}this.tryJump()}}
   if(!this.grounded||Math.abs(this.vx)>10||this.attack>0||this.dash>0)this.morphPose=false;
   if(this.y>530){this.invincible=0;this.hurt();this.fallCount++;this.x=this.checkpoint.x;this.y=this.checkpoint.y;this.vx=0;this.vy=0;this.dash=0;this.buffer=0;this.grounded=true;this.coyote=.12}
-  if(!this.arena&&this.grounded&&this.y===420){
+  if(!this.arena){
    this.clearing.checkpoints.forEach((x,i)=>{if(this.x>x&&this.checkpointId<i+1){this.checkpointId=i+1;this.checkpoint={x,y:420};this.emit('checkpoint');this.banner='LANTERN LIT · CHECKPOINT';this.bannerTime=1.6;}});
   }
   this.embers=this.embers.filter(e=>{if(Math.hypot(e.x-this.x,e.y-(this.y-18))<24){this.collected++;this.emit('pickup_essence');this.banner=this.collected===3?'THREE FLAMES · THE WAY IS OPEN':`FLAME ${this.collected} / 3`;this.bannerTime=1.8;return false}return true});
-  if(!this.arena&&this.collected===3&&Math.hypot(this.x-this.clearing.exit.x,this.y-this.clearing.exit.y)<28){this.mode='won';return}
+  if(!this.arena&&this.collected===3&&Math.hypot(this.x-this.clearing.exit.x,this.y-this.clearing.exit.y)<28){
+   if(!this.foesAhead){this.mode='won';return}
+   if(this.bannerTime<=0){this.banner='FOES STILL ROAM THE CLEARING';this.bannerTime=1.6;}
+  }
   updateEnemies(this,dt);updateEnemyShots(this,dt);
-  for(const b of this.bolts){let old=b.x;b.x+=b.dir*680*dt;b.life-=dt;for(const e of this.enemies){if(e.x<Math.min(old,b.x)-22||e.x>Math.max(old,b.x)+22||Math.abs(e.y-23-b.y)>(b.tier>=5?65:30)||b.hit.has(e.id))continue;b.hit.add(e.id);if(b.tier===2)this.blast(e.x,e.y-22,100,b.damage,false,b.impact);else{this.damage(e,b.damage,b.dir*(30+b.tier*5));this.pokerImpact(b.impact,e.hp<=0)}if(b.tier<3){b.life=0;break}}}
+  for(const b of this.bolts){let old=b.x;b.x+=b.dir*680*dt;b.life-=dt;if(this.wall&&b.x>this.wall.x-8){b.life=0;continue}for(const e of this.enemies){const box=e.boss&&bossBox(e),lo=Math.min(old,b.x),hi=Math.max(old,b.x),reach=b.tier>=5?65:30;
+   const miss=box?hi+6<box.x0||lo-6>box.x1||b.y<box.y0-reach/2||b.y>box.y1+4:e.x<lo-22||e.x>hi+22||Math.abs(e.y-23-b.y)>reach;
+   if(miss||b.hit.has(e.id))continue;b.hit.add(e.id);if(b.tier===2)this.blast(e.x,e.y-22,100,b.damage,false,b.impact);else{this.damage(e,b.damage,b.dir*(30+b.tier*5));this.pokerImpact(b.impact,e.hp<=0)}if(b.tier<3){b.life=0;break}}}
   this.bolts=this.bolts.filter(b=>b.life>0);this.removeDead();
   for(const r of this.impacts)r.life-=dt;this.impacts=this.impacts.filter(r=>r.life>0);
   for(const r of this.corpses)r.life-=dt;this.corpses=this.corpses.filter(r=>r.life>0);
