@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LRRH Animation Roster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1114;
+  --panel: #171a1f;
+  --panel-2: #1e2229;
+  --line: #2a2f38;
+  --text: #e8e4dc;
+  --muted: #8d939c;
+  --red: #d8433f;
+  --red-soft: #3a1d1f;
+  --accent: #e9b949;
+  --pixel: "Pixelify Sans", ui-monospace, monospace;
+  --zoom: 5;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 Inter, system-ui, sans-serif; }
+button { font: inherit; color: inherit; }
+header.top { padding: 40px 24px 20px; max-width: 1400px; margin: 0 auto; }
+header.top h1 { font-family: var(--pixel); font-weight: 700; font-size: 34px; margin: 0; letter-spacing: .5px; }
+header.top h1 span { color: var(--red); }
+header.top p { color: var(--muted); margin: 6px 0 0; max-width: 70ch; }
+
+.bar { position: sticky; top: 0; z-index: 10; background: rgba(15,17,20,.92); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line); }
+.bar-inner { max-width: 1400px; margin: 0 auto; padding: 10px 24px; display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.ctl { display: flex; align-items: center; gap: 8px; }
+.ctl > label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.seg { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+.seg button { background: none; border: 0; padding: 5px 10px; border-radius: 6px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+.seg button:hover { color: var(--text); }
+.seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+.btn { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer; min-width: 34px; }
+.btn:hover { border-color: #3c434f; }
+.btn.primary { background: var(--red-soft); border-color: #5a2a2c; }
+.zoomval { font-family: var(--pixel); min-width: 2.5ch; text-align: center; }
+.keys { color: var(--muted); font-size: 12px; margin-left: auto; }
+kbd { font: 11px ui-monospace, monospace; background: var(--panel); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
+
+main { max-width: 1400px; margin: 0 auto; padding: 8px 24px 64px; }
+section h2 { font-family: var(--pixel); font-weight: 500; font-size: 22px; margin: 36px 0 4px; }
+section h2 small { font-family: Inter, sans-serif; font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+section > p.note { color: var(--muted); margin: 0 0 14px; }
+
+/* stage backgrounds */
+.stage { position: relative; image-rendering: pixelated; }
+[data-bg="night"] .stage { background: linear-gradient(#1d2733, #121820 75%, #0c1015); }
+[data-bg="dusk"]  .stage { background: linear-gradient(#5b4566, #8a5a5a 70%, #c08257); }
+[data-bg="day"]   .stage { background: linear-gradient(#bcd6dc, #dfe7cf 75%); }
+[data-bg="checker"] .stage {
+  --c: calc(var(--zoom) * 2px);
+  background: repeating-conic-gradient(#3a3f47 0 25%, #2c3037 0 50%) 0 0 / calc(var(--c) * 2) calc(var(--c) * 2);
+}
+.stage::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.08); pointer-events: none; }
+[data-bg="day"] .stage::after { background: rgba(60,70,40,.25); }
+canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+
+/* lineup */
+.lineup { border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
+.lineup .stage { display: flex; align-items: flex-end; gap: calc(var(--zoom) * 3px); padding: calc(var(--zoom) * 6px) calc(var(--zoom) * 6px) 0; width: max-content; min-width: 100%; }
+.lu { display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; }
+.lu .tip { position: absolute; bottom: calc(100% + 4px); white-space: nowrap; font-size: 12px; background: var(--panel-2);
+  border: 1px solid var(--line); padding: 2px 7px; border-radius: 6px; opacity: 0; transform: translateY(4px); transition: .12s; pointer-events: none; color: var(--text); }
+.lu:hover .tip, .lu:focus-visible .tip { opacity: 1; transform: none; }
+.lu:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* cards */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(32px * var(--zoom) + 220px), 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; scroll-margin-top: 80px; }
+.card.flash { animation: flash 1.2s ease-out; }
+@keyframes flash { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.card-top { display: flex; gap: 0; }
+.card .stage.big { flex: none; display: grid; place-items: center; padding: calc(var(--zoom) * 2px) calc(var(--zoom) * 3px) 0; }
+.card .meta { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1; }
+.card h3 { margin: 0; font-family: var(--pixel); font-weight: 500; font-size: 18px; line-height: 1.15; }
+.card .sub { color: var(--muted); font-size: 12px; }
+.badge { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 4px; vertical-align: 1px; }
+.badge.full { color: var(--accent); border-color: #5b4a22; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; font-size: 12px; cursor: pointer; color: var(--muted); }
+.tag:hover { color: var(--text); }
+.tag[aria-pressed="true"] { background: var(--red-soft); border-color: #6a2e30; color: #ffd9d6; }
+.readout { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); margin-top: auto; }
+.readout b { color: var(--text); font-weight: 500; }
+.strip { display: grid; grid-template-columns: repeat(var(--ntags, 6), 1fr); border-top: 1px solid var(--line); }
+.mini { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 6px; cursor: pointer; border-right: 1px solid var(--line); background: none; border-top: 0; border-bottom: 0; border-left: 0; }
+.mini:last-child { border-right: 0; }
+.mini .stage { width: 100%; display: grid; place-items: center; padding-top: 4px; }
+.mini span { font-size: 11px; color: var(--muted); }
+.mini[aria-pressed="true"] span { color: #ffb4ae; }
+.mini:hover span { color: var(--text); }
+
+footer { color: var(--muted); font-size: 12px; text-align: center; padding: 24px; }
+@media (max-width: 640px) {
+  header.top, .bar-inner, main { padding-left: 16px; padding-right: 16px; }
+  .keys { display: none; }
+  .card-top { flex-direction: column; }
+  .grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body data-bg="night">
+<header class="top">
+  <h1>Little <span>Red</span> — Animation Roster</h1>
+  <p id="summary"></p>
+</header>
+
+<div class="bar"><div class="bar-inner">
+  <div class="ctl"><label>Set</label>
+    <div class="seg" id="setSeg">
+      <button data-v="game" aria-pressed="true" title="Shrunk versions where the game uses them; boar and wolf stay full size">Game size</button>
+      <button data-v="original" aria-pressed="false" title="Every character's original 32px drawing">Original</button>
+    </div></div>
+  <div class="ctl"><label>Play</label>
+    <div class="seg" id="tagSeg"><button data-v="" aria-pressed="true">Per card</button></div></div>
+  <div class="ctl"><label>Zoom</label>
+    <button class="btn" id="zoomOut" aria-label="Zoom out">−</button><span class="zoomval" id="zoomVal">5×</span><button class="btn" id="zoomIn" aria-label="Zoom in">+</button></div>
+  <div class="ctl"><label>Speed</label>
+    <div class="seg" id="speedSeg">
+      <button data-v="0.25" aria-pressed="false">¼×</button><button data-v="0.5" aria-pressed="false">½×</button><button data-v="1" aria-pressed="true">1×</button><button data-v="2" aria-pressed="false">2×</button>
+    </div></div>
+  <div class="ctl">
+    <button class="btn primary" id="playBtn" aria-label="Pause">❚❚</button>
+    <button class="btn" id="stepBtn" aria-label="Next frame" title="Next frame" disabled>▸|</button></div>
+  <div class="ctl"><label>Backdrop</label>
+    <div class="seg" id="bgSeg">
+      <button data-v="night" aria-pressed="true">Night</button><button data-v="dusk" aria-pressed="false">Dusk</button><button data-v="day" aria-pressed="false">Day</button><button data-v="checker" aria-pressed="false">Checker</button>
+    </div></div>
+  <div class="keys"><kbd>space</kbd> play · <kbd>1</kbd>–<kbd id="lastKey">6</kbd> animation · <kbd>0</kbd> per card · <kbd>→</kbd> step</div>
+</div></div>
+
+<main>
+  <section>
+    <h2>Lineup <small>idle, feet on one ground line</small></h2>
+    <p class="note">Click a character to jump to its card. Heights are the tallest idle frame in art pixels.</p>
+    <div class="lineup"><div class="stage" id="lineup"></div></div>
+  </section>
+  <section id="cast"><h2>Story cast</h2><div class="grid"></div></section>
+  <section id="enemy"><h2>Enemies</h2><div class="grid"></div></section>
+</main>
+<footer>Generated by <code>lrrh_sprites/build_demo.py</code> from the <code>*_sheet.png</code> / <code>*_sheet.json</code> exports.</footer>
+
+<script>
+const CHARS = /*__DATA__*/null;
+const TAGS = [...new Set(CHARS.flatMap(c => c.original.tags.map(t => t.name)))];  // read from the sheets, so new tags show up on their own
+const LOOP_HOLD = { death: 700, hit: 250 };  // pause on the last frame before a one-shot loops again
+const state = { set: "game", tag: "", zoom: 5, speed: 1, playing: true };
+const anims = [];
+
+const variantOf = c => (state.set === "original" || c.gameUsesOriginal || !c.small) ? c.original : c.small;
+
+function loadImages() {
+  const jobs = [];
+  for (const c of CHARS) for (const v of [c.original, c.small]) {
+    if (!v) continue;
+    v.img = new Image();
+    jobs.push(new Promise(r => { v.img.onload = r; v.img.src = v.src; }));
+  }
+  return Promise.all(jobs);
+}
+
+// Union bounding box of a tag's frames, for the lineup crop and height label.
+function bbox(v, tagName) {
+  if (v._bb && v._bb[tagName]) return v._bb[tagName];
+  const t = v.tags.find(t => t.name === tagName);
+  const cv = document.createElement("canvas"); cv.width = v.img.width; cv.height = v.img.height;
+  const cx = cv.getContext("2d"); cx.drawImage(v.img, 0, 0);
+  let x0 = 32, x1 = -1, y0 = 32;
+  for (let i = t.from; i <= t.to; i++) {
+    const [fx, fy] = v.frames[i], d = cx.getImageData(fx, fy, 32, 32).data;
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) if (d[(y * 32 + x) * 4 + 3]) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y;
+    }
+  }
+  (v._bb ||= {})[tagName] = { x0, x1, y0, h: 32 - y0 };
+  return v._bb[tagName];
+}
+
+class Anim {
+  constructor(canvas, char, tag, scaleFn, opts = {}) {
+    Object.assign(this, { canvas, char, tag, scaleFn, crop: opts.crop, onFrame: opts.onFrame });
+    this.ctx = canvas.getContext("2d");
+    this.reset();
+    anims.push(this);
+  }
+  get v() { return variantOf(this.char); }
+  get t() { const tg = this.tag(); return this.v.tags.find(t => t.name === tg); }
+  reset() { this.i = 0; this.acc = 0; this.key = this.tag(); }
+  advance(dt) {
+    if (this.key !== this.tag()) this.reset();
+    const t = this.t, v = this.v;
+    this.acc += dt;
+    for (;;) {
+      const idx = t.from + this.i, last = idx === t.to;
+      const dur = v.frames[idx][2] + (last ? (LOOP_HOLD[t.name] || 0) : 0);
+      if (this.acc < dur) break;
+      this.acc -= dur;
+      this.i = last ? 0 : this.i + 1;
+    }
+  }
+  step() { const t = this.t; this.acc = 0; this.i = (t.from + this.i >= t.to) ? 0 : this.i + 1; }
+  draw() {
+    if (this.key !== this.tag()) this.reset();
+    const v = this.v, t = this.t, s = this.scaleFn();
+    const [fx, fy, dur] = v.frames[t.from + this.i];
+    const cx0 = this.crop ? this.crop().x0 : 0, cw = this.crop ? this.crop().x1 - cx0 + 1 : 32;
+    const W = cw * s, H = 32 * s;
+    if (this.canvas.width !== W || this.canvas.height !== H) { this.canvas.width = W; this.canvas.height = H; }
+    const c = this.ctx; c.imageSmoothingEnabled = false; c.clearRect(0, 0, W, H);
+    c.drawImage(v.img, fx + cx0, fy, cw, 32, 0, 0, W, H);
+    this.onFrame && this.onFrame(t, this.i, dur);
+  }
+}
+
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k === "class" ? n.className = v : k.startsWith("on") ? n.addEventListener(k.slice(2), v) : n.setAttribute(k, v);
+  n.append(...kids); return n;
+};
+
+function buildLineup() {
+  const box = document.getElementById("lineup");
+  for (const c of CHARS) {
+    const cv = el("canvas");
+    const tip = el("span", { class: "tip" });
+    const item = el("div", { class: "lu", tabindex: "0", role: "button", "aria-label": c.title,
+      onclick: () => jump(c.id), onkeydown: e => (e.key === "Enter") && jump(c.id) }, tip, cv);
+    new Anim(cv, c, () => "idle", () => state.zoom, {
+      crop: () => bbox(variantOf(c), "idle"),
+      onFrame: () => { tip.textContent = `${c.title} · ${bbox(variantOf(c), "idle").h} px`; },
+    });
+    box.append(item);
+  }
+}
+
+function jump(id) {
+  const card = document.getElementById("c-" + id);
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+  card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash");
+}
+
+function buildCard(c) {
+  let own = "idle";
+  const tagOf = () => (state.tag && has(state.tag)) ? state.tag : own;
+  const big = el("canvas");
+  const readout = el("div", { class: "readout" });
+  const has = name => c.original.tags.some(t => t.name === name);
+  const pills = TAGS.filter(has).map(name => el("button", { class: "tag", onclick: () => select(name) }, name));
+  const minis = TAGS.filter(has).map(name => {
+    const cv = el("canvas");
+    const b = el("button", { class: "mini", title: `Show ${name}`, onclick: () => select(name) }, el("div", { class: "stage" }, cv), el("span", {}, name));
+    new Anim(cv, c, () => name, () => Math.max(2, Math.round(state.zoom / 2.5)));
+    return b;
+  });
+  const badge = el("span", { class: "badge" });
+  const sub = el("div", { class: "sub" });
+  function sync() {
+    const t = tagOf();
+    pills.forEach(p => p.setAttribute("aria-pressed", p.textContent === t));
+    minis.forEach(m => m.setAttribute("aria-pressed", m.lastChild.textContent === t));
+    const useOrig = state.set === "original" || c.gameUsesOriginal;
+    badge.textContent = useOrig ? (c.small ? "full size" : "32 px") : "game size";
+    badge.className = "badge" + (state.set === "game" && c.gameUsesOriginal && c.small ? " full" : "");
+    sub.textContent = `${c.id}${useOrig ? "" : "_small"}_sheet.png · ${bbox(variantOf(c), "idle").h} px tall`;
+  }
+  function select(name) { own = name; if (state.tag) setTag(""); sync(); }
+  new Anim(big, c, tagOf, () => state.zoom, {
+    onFrame: (t, i, dur) => {
+      readout.innerHTML = `<b>${t.name}</b> ${i + 1}/${t.to - t.from + 1} · ${dur} ms`;
+    },
+  });
+  const card = el("article", { class: "card", id: "c-" + c.id },
+    el("div", { class: "card-top" },
+      el("div", { class: "stage big" }, big),
+      el("div", { class: "meta" }, el("h3", {}, c.title, badge), sub, el("div", { class: "tags" }, ...pills), readout)),
+    el("div", { class: "strip" }, ...minis));
+  card._sync = sync;
+  document.querySelector(`#${c.group} .grid`).append(card);
+  sync();
+}
+
+function seg(id, onPick) {
+  const box = document.getElementById(id);
+  box.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    onPick(b.dataset.v);
+  });
+  return v => box.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === String(v)));
+}
+const syncCards = () => document.querySelectorAll(".card").forEach(c => c._sync());
+const markSet = seg("setSeg", v => { state.set = v; markSet(v); syncCards(); drawAll(); });
+const markTag = seg("tagSeg", v => setTag(v));
+function setTag(v) { state.tag = v; markTag(v); syncCards(); drawAll(); }
+const markSpeed = seg("speedSeg", v => { state.speed = +v; markSpeed(v); });
+const markBg = seg("bgSeg", v => { document.body.dataset.bg = v; markBg(v); });
+function setZoom(z) {
+  state.zoom = Math.min(10, Math.max(2, z));
+  document.documentElement.style.setProperty("--zoom", state.zoom);
+  document.getElementById("zoomVal").textContent = state.zoom + "×";
+  drawAll();
+}
+document.getElementById("zoomIn").onclick = () => setZoom(state.zoom + 1);
+document.getElementById("zoomOut").onclick = () => setZoom(state.zoom - 1);
+const playBtn = document.getElementById("playBtn"), stepBtn = document.getElementById("stepBtn");
+function setPlaying(p) {
+  state.playing = p; playBtn.textContent = p ? "❚❚" : "▶"; playBtn.setAttribute("aria-label", p ? "Pause" : "Play");
+  stepBtn.disabled = p;
+}
+playBtn.onclick = () => setPlaying(!state.playing);
+stepBtn.onclick = () => { anims.forEach(a => a.step()); drawAll(); };
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input, textarea")) return;
+  if (e.key === " ") { e.preventDefault(); setPlaying(!state.playing); }
+  else if (e.key === "ArrowRight" && !state.playing) { anims.forEach(a => a.step()); drawAll(); }
+  else if (e.key >= "1" && e.key <= "9" && TAGS[+e.key - 1]) setTag(TAGS[+e.key - 1]);
+  else if (e.key === "0") setTag("");
+  else if (e.key === "+" || e.key === "=") setZoom(state.zoom + 1);
+  else if (e.key === "-") setZoom(state.zoom - 1);
+});
+
+function drawAll() { anims.forEach(a => a.draw()); }
+let last = performance.now();
+function tick(now) {
+  const dt = Math.min(250, now - last) * state.speed; last = now;
+  if (state.playing) { anims.forEach(a => a.advance(dt)); drawAll(); }
+  requestAnimationFrame(tick);
+}
+
+const tagBox = document.getElementById("tagSeg");
+document.documentElement.style.setProperty("--ntags", TAGS.length);
+document.getElementById("lastKey").textContent = Math.min(9, TAGS.length);
+TAGS.forEach((t, k) => tagBox.append(el("button", { "data-v": t, "aria-pressed": "false", title: `Key ${k + 1}` }, t)));
+document.getElementById("summary").textContent =
+  `${CHARS.length} characters × ${TAGS.length} animations (${CHARS[0].original.tags.map(t => `${t.name} ${t.to - t.from + 1}`).join(" · ")} frames), ` +
+  `32×32 canvas, facing right, feet on the bottom row. Everything plays at its exported frame timings.`;
+
+loadImages().then(() => {
+  buildLineup();
+  CHARS.forEach(buildCard);
+  setZoom(state.zoom);
+  requestAnimationFrame(tick);
+});
+</script>
+</body>
+</html>

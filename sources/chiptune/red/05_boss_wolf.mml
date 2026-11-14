@@ -1,0 +1,76 @@
+; RED, boss 5: the Wolf, keeper of stolen voices. 24 bars in three parts.
+;   bars 1-8   G minor, the bedroom fight: howls (a note sliding up a fifth) and a chromatic riff.
+;   bars 9-16  the stolen voices: Red's theme in minor in a borrowed voice (9-12), then
+;              Rowan's fanfare bent out of shape (13-14).
+;   bars 17-24 the chapel bell rings and his shadow comes loose: G major, the bell on every
+;              downbeat, Red's own theme on the flute exactly as in Lantern Wood. It ends on
+;              D and drops back into G minor.
+;   sid1  kick, snare and octave bass on one voice
+;   sid2  chord arpeggios, held chords under the voices, the bell
+;   sid3  howl, riff, the voices, Red
+tempo 168
+bars 24
+
+inst kick  wave=n,p arp=36,19,12,7,3,0,-3,-5,-7,-9 pw=50 adsr=0,8,0,0
+inst snare wave=n,n,p,n arp=31,31,5,29,27 pw=50 adsr=0,10,0,0
+inst bass  wave=p pw=15-60/1.5 adsr=0,10,10,2 filter=lp cut=250-1800/25 res=0.8
+inst arp   wave=p arp=12,0 pw=10-45/1 adsr=0,12,6,3
+inst pad   wave=p pw=10-50/1.5 adsr=8,0,10,8 filter=bp cut=400-2400/30 res=0.7
+inst bell  wave=t ring=2.76 adsr=0,40,0,30
+inst howl  wave=p pw=30-50/1 vib=0.5 slide=-7/16 adsr=4,0,13,10
+inst lead  wave=s,p pw=20-50/1.2 vib=0.25 adsr=0,14,11,4
+inst voice wave=t vib=0.35 slide=-2/8 adsr=3,10,12,8
+inst flute wave=t vib=0.2 adsr=2,12,12,5
+
+$k: @kick v15 o2 c
+$s: @snare v12 o3 g
+$b: @bass v11 o2
+
+; ---- sid1 (l16): kick, bass, octave, bass, snare, bass, octave, bass
+$1g:  [$k $b g >g< g $s $b g >g< g]2 |
+$1eb: [$k $b e- >e-< e- $s $b e- >e-< e-]2 |
+$1d:  [$k $b >d >d< d< $s $b >d >d< d<]2 |
+$1df: $k $b >d >d< d< $s $b >d >d< d< $k $b >d< $s $s $s $s $s $s |
+$1c:  [$k $b >c >c< c< $s $b >c >c< c<]2 |
+$1ab: [$k $b a- >a-< a- $s $b a- >a-< a-]2 |
+$1em: [$k $b e >e< e $s $b e >e< e]2 |
+
+sid1: l16 q7
+sid1: $1g $1g $1eb $1d $1g $1g $1c $1df
+sid1: $1g $1d $1eb $1d $1c $1g $1ab $1df
+sid1: $1g $1d $1em $1d $1g $1c $1d $1df
+
+; ---- sid2
+$a: @arp v8 o4
+$p: @pad v9 o4
+$l: @bell v6 o5
+$2gm: $a [{gb->d}8. {gb->d}8. {gb->d}8]2 |
+$2eb: $a [{gb->e-}8. {gb->e-}8. {gb->e-}8]2 |
+$2d:  $a [{f#a>d}8. {f#a>d}8. {f#a>d}8]2 |
+$2cm: $a [{g>ce-}8. {g>ce-}8. {g>ce-}8]2 |
+$3gm: $p {gb->d}1 |
+$3d:  $p {f#a>d}1 |
+$3eb: $p {gb->e-}1 |
+$3cm: $p {g>ce-}1 |
+$3ab: $p {a->ce-}1 |
+$4g:  $l g4 $a [{gb>d}8]6 |
+$4d:  $l a4 $a [{f#a>d}8]6 |
+$4em: $l b4 $a [{gb>e}8]6 |
+$4c:  $l >c4< $a [{g>ce}8]6 |
+
+sid2: q6
+sid2: $2gm $2gm $2eb $2d $2gm $2gm $2cm $2d
+sid2: q8 $3gm $3d $3eb $3d $3cm $3gm $3ab $3d
+sid2: q7 $4g $4d $4em $4d $4g $4c $4d $4d
+
+; ---- sid3
+$h: @howl v12
+$m: @lead v12
+
+sid3: o5 l8 q7
+sid3: $h g2. $m b-8 a8 | g4 f# g b-4 a g | $h >e-2.< $m g8 b-8 | a4 f# d f#4 a4 |
+sid3: $h >d2.< $m >c8 <b-8 | a4 g f# g >d4.< | >e-4 d c <g4 >c4< | >d4 c <a f#4 d4 |
+sid3: @voice v8 g4 b- >d e-4 d <b- | a4 >d <b- a4. g | g4 b- >d g4 f e- | d2 <a4 f#4 |
+sid3: $m c4 c g4 g >c4< | >d4 c <b- a b- >c4< | >e-4 c <a-4 >c e-4< | >d2< $h a2 |
+sid3: @flute v8 g4 b >d e4 d <b | a4 >d <b a4. g | g4 b >d g4 f# e | d2 r d e f# |
+sid3: g4 f# e d4 <b4> | c4 <b a b4 g4 | a4 b >c d4< f#4 | a2. r4 |

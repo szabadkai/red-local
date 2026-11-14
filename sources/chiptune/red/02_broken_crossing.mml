@@ -1,0 +1,52 @@
+; RED, stage 2: Broken Crossing. A flooded mill settlement, a waterwheel, silent windows.
+; D dorian in 6/8: the arpeggio turns like the wheel. In bars 13-14 a borrowed voice
+; calls with the opening of Red's theme and gets two notes wrong (E flat, B flat).
+;   sid1  bass and a splash of water on the off-beat
+;   sid2  rolling arpeggio
+;   sid3  lead; the false call in a different voice
+tempo 99
+meter 3
+bars 16
+
+inst bass   wave=p pw=20-50/0.8 adsr=0,12,9,3 filter=lp cut=300-1100/9 res=0.6
+inst splash wave=n adsr=1,9,0,4 filter=bp cut=700>2600/160 res=0.5
+inst roll   wave=p pw=25-45/0.5 adsr=0,14,4,5
+inst lead   wave=s,p pw=30-50/0.6 vib=0.2 adsr=1,16,10,6
+inst voice  wave=t vib=0.35 slide=-2/8 adsr=3,10,12,8
+
+$b: @bass v12 o2
+$w: @splash v7 o4 c
+
+; ---- sid1 (l8): bass, splash, fifth
+$1dm: $b >d4.< $w $b a4 |
+$1c:  $b >c4.< $w $b g4 |
+$1g:  $b g4. $w $b >d4< |
+$1bb: $b b-4. $w $b >f4< |
+$1a:  $b a4. $w $b >e4< |
+$1f:  $b f4. $w $b >c4< |
+$1gm: $b g4. $w $b >d4< |
+
+sid1: l8 q7
+sid1: $1dm $1c $1dm $1g $1dm $1c $1bb $1a
+sid1: $1f $1c $1gm $1a $1g $1gm $1dm $1a
+
+; ---- sid2: six eighths per bar, up and back
+$2dm: o4 d f a >d< a f |
+$2c:  o4 c e g >c< g e |
+$2g:  o3 b >d g b g d< |
+$2bb: o3 b- >d f b- f d< |
+$2a:  o3 a >c# e a e c#< |
+$2f:  o4 c f a >c< a f |
+$2gm: o3 b- >d g b- g d< |
+
+sid2: @roll v10 l8 q8
+sid2: $2dm $2c $2dm $2g $2dm $2c $2bb $2a
+sid2: $2f $2c $2gm $2a $2g $2gm $2dm $2a
+
+; ---- sid3
+sid3: @lead v11 o5 l8 q7
+sid3: d4 f a4 g | e4. c4 e | f4 a >d4 c< | b4. g4. |
+sid3: d4 f a4 >d< | >c4 <g e4 g | f4 d <b-4> d | e4. c#4. |
+sid3: a4 >c f4 e< | >e4 c <g4 >c< | b-4 >d g4 f< | >e4. <a4. |
+sid3: @voice v8 g4 b >d4 e- | d4. <b-4. |
+sid3: @lead v11 a4 f d4 f | e4. r4. |

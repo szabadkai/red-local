@@ -1,0 +1,76 @@
+; The groovy_pop tune on 3 voices, arranged the way the C64 demos in
+; ~/c64-emulator-from-microscopy/demo do it (see sidscan.py):
+;   sid1  kick, snare and bass share one voice, a 16th each; bass through a sweeping resonant filter
+;   sid2  chord arpeggios and hats share one voice
+;   sid3  lead, then a filtered pad in the outro
+; Every pulse sound has a moving pulse width; drums are a noise frame followed by a pitch drop.
+tempo 116
+swing 56
+bars 24
+loop 1
+
+inst kick  wave=n,p arp=36,19,12,7,3,0,-3,-5,-7,-9 pw=50 adsr=0,8,0,0
+inst snare wave=n,n,p,n arp=31,31,5,29,27 pw=50 adsr=0,10,0,0
+inst hat   wave=n arp=48 adsr=0,2,0,0
+inst bass  wave=p pw=15-60/1.5 adsr=0,10,10,2 filter=lp cut=250-1800/25 res=0.8
+inst arp   wave=p arp=12,0 pw=10-45/1 adsr=0,12,6,3
+inst lead  wave=s,p pw=25-55/0.7 vib=0.25 adsr=1,20,10,6
+inst pad   wave=p pw=20-70/0.5 adsr=20,0,11,20 filter=bp cut=400-2600/12 res=0.7
+
+$k: @kick v15 o2 c
+$s: @snare v12 o3 g
+$b: @bass v13
+$h: @hat v7 g
+$a: @arp v8
+
+; ---- sid1: intro/outro bars (kick + held bass), then groove bars (kick bass bass bass, snare bass bass bass)
+$i_gm: [$k $b o2 g8.]4
+$i_c:  [$k $b o3 c8.]4
+$i_f:  [$k $b o2 f8.]4
+$i_dm: [$k $b o3 d8.]4
+$g_gm: [$k $b o2 g >g< g $s $b o2 g >g< g]2
+$g_c:  [$k $b o3 c >c< c $s $b o3 c >c< c]2
+$g_f:  [$k $b o2 f >f< f $s $b o2 f >f< f]2
+$g_dm: [$k $b o3 d >d< d $s $b o3 d >d< d]2
+$g_bb: [$k $b o2 b- >b-< b- $s $b o2 b- >b-< b-]2
+$g_am: [$k $b o2 a >a< a $s $b o2 a >a< a]2
+$g_dmf: $k $b o3 d >d< d $s $b o3 d >d< d $k $b o3 d >d< $s $s $b o3 d $s $s
+$g_fc: $k $b o2 f >f< f $s $b o2 f >f< f $k $b o3 c >c< c $s $b o3 g b- >c<
+
+sid1: l16 q7
+sid1: $i_gm $i_c $i_f $i_dm
+sid1: $g_gm $g_c $g_f $g_dm $g_gm $g_c $g_f $g_dmf
+sid1: $g_bb $g_c $g_am $g_dm $g_bb $g_c $g_f $g_fc
+sid1: $i_gm $i_c $i_f $i_dm
+
+; ---- sid2: chord blip, hat, chord blip, hat
+$c_gm:  [$a o3 {gb->df} $h]8
+$c_c:   [$a o3 {gb->ce} $h]8
+$c_f:   [$a o3 {fa>ce} $h]8
+$c_dm:  [$a o3 {fa>cd} $h]8
+$c_bb:  [$a o4 {fb->d} $h]8
+$c_c2:  [$a o4 {g>ce} $h]8
+$c_am:  [$a o4 {a>ce} $h]8
+$c_dm2: [$a o4 {a>df} $h]8
+$c_f2:  [$a o4 {a>cf} $h]8
+$c_fc:  [$a o4 {a>cf} $h]4 [$a o4 {gb->ce} $h]4
+
+sid2: l16 q6
+sid2: [r1]2 $c_f $c_dm
+sid2: $c_gm $c_c $c_f $c_dm $c_gm $c_c $c_f $c_dm
+sid2: $c_bb $c_c2 $c_am $c_dm2 $c_bb $c_c2 $c_f2 $c_fc
+sid2: $c_gm $c_c $c_f $c_dm
+
+; ---- sid3: lead (same melody as groovy_pop), pad in the outro
+$v1: r8 d8 f g b-8 a8. g f8 d8 | e8. g r8 e8 r c8 e g8 b-8
+$v1: a4 r8 g a r >c8.< a8 g8 | f8. d r4 r8 d f a8 >c8<
+$v2: >d8.< b- r8 g8 r b-8 g f8 d8 | e8 g8 b-8. g r8 e8 c8 e8
+$v2: f8. a r >c8.< a8 f8 a8 >c8< | >d4< a8 f8 d4 r8 f g
+$c1: b-8 b- >d8.< b-8 r >f8 d< b-8 >d8<
+$c2: >c8 c e8.< g8 r >e8 c< g8 >c8<
+$ch: $c1 | $c2 | >c8 c e8. c8 r c8 <a >c8 <a8 | a8 a >d8.< a8 f8 e8 d4
+$ch: $c1 | >c8 c e8. g8 r g8 e c8 <b-8 | a2 r8 f8 a8 >c8< | >c4. <a8 g4 e4
+
+sid3: @lead v12 o5 l16 q7
+sid3: [r1]4 $v1 $v2 v13 $ch
+sid3: @pad v10 o4 q8 g2 b-2 >c2< b-2 a1 a2 >c2<

@@ -1,0 +1,64 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chip player</title>
+<style>
+  body { font: 14px/1.4 ui-monospace, Menlo, monospace; background: #14121f; color: #d8d4e8;
+    margin: 0; padding: 16px; height: 100vh; box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 8px; }
+  #bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  select, button { font: inherit; color: inherit; background: #2a2640; border: 1px solid #4a4470;
+    border-radius: 4px; padding: 4px 12px; }
+  button:hover { background: #3a3560; }
+  textarea { flex: 1; font: inherit; color: #b8f0c0; background: #0c0b14; border: 1px solid #2a2640;
+    border-radius: 4px; padding: 8px; resize: none; white-space: pre; }
+</style>
+<div id="bar">
+  <select id="songs"><option value="red/01_lantern_wood.mml">RED 1 · Lantern Wood</option><option value="red/01_boss_briar_hart.mml">RED 1 boss · Briar Hart</option><option value="red/02_broken_crossing.mml">RED 2 · Broken Crossing</option><option value="red/02_boss_tollkeeper.mml">RED 2 boss · Tollkeeper</option><option value="red/03_moss_cavern.mml">RED 3 · Moss Cavern</option><option value="red/03_boss_rowan.mml">RED 3 boss · Rowan</option><option value="red/04_ruined_chapel.mml">RED 4 · Ruined Chapel</option><option value="red/04_boss_bell_widow.mml">RED 4 boss · Bell Widow</option><option value="red/05_thorn_house.mml">RED 5 · Thorn House</option><option value="red/05_boss_wolf.mml">RED 5 boss · The Wolf</option><option>sid_groove.mml</option><option>groovy_pop.mml</option><option>demo.mml</option></select>
+  <button id="playBtn">Play</button>
+  <button id="stopBtn">Stop</button>
+  <span id="msg"></span>
+</div>
+<textarea id="text" spellcheck="false"></textarea>
+<script src="chip.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let ctx, node;
+
+  function stop() {
+    if (node) node.stop();
+    node = null;
+    $('msg').textContent = '';
+  }
+
+  function play() {
+    stop();
+    try {
+      ctx ??= new AudioContext();
+      ctx.resume();
+      node = Chip.play($('text').value, ctx);
+      $('msg').textContent = 'playing, loops until stopped';
+    } catch (e) {
+      $('msg').textContent = e.message;
+    }
+  }
+
+  async function load() {
+    stop();
+    try {
+      const res = await fetch($('songs').value, { cache: 'no-store' });
+      if (!res.ok) throw new Error(res.statusText);
+      $('text').value = await res.text();
+    } catch (e) {
+      $('msg').textContent = `could not load ${$('songs').value} (serve this folder over http)`;
+    }
+  }
+
+  $('playBtn').onclick = play;
+  $('stopBtn').onclick = stop;
+  $('songs').onchange = load;
+  addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); play(); }
+  });
+  load();
+</script>

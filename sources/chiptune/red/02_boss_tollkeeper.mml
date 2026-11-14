@@ -1,0 +1,56 @@
+; RED, boss 2: the Tollkeeper. A mill guard locked inside his own armour, swinging a chain.
+; C minor, slow and heavy. The snare is a chain clank (ring-modulated), the bass riff
+; drags down chromatically. In the second half he anchors the chain to the waterwheel:
+; the chords start to turn under a sweeping filter.
+;   sid1  kick, chain clank and bass on one voice
+;   sid2  chord stabs with the clank, then the wheel
+;   sid3  low brass
+tempo 104
+bars 16
+
+inst kick  wave=n,p arp=36,17,10,5,0,-4,-7,-9,-11,-12 pw=50 adsr=0,11,0,0
+inst clank wave=n,t,t,n arp=43,31,38,45 ring=3.3 adsr=0,8,0,4
+inst bass  wave=p pw=20-45/1 adsr=0,10,11,2 filter=lp cut=180-900/14 res=0.85
+inst stab  wave=p arp=12,0 pw=30 adsr=0,6,3,2
+inst wheel wave=p pw=10-50/1.5 adsr=8,0,10,8 filter=bp cut=400-2400/30 res=0.7
+inst brass wave=s detune=-8 adsr=3,10,12,5 filter=lp cut=2000 res=0.4
+
+$k: @kick v15 o2 c
+$s: @clank v8 o3 c
+$b: @bass v11 o2
+
+; ---- sid1 (l8): kick, bass, clank, bass
+$r1:  $k $b c $s $b c $k $b e- $s $b f |
+$r2:  $k $b c $s $b c $k $b g- $s $b f |
+$1ab: $k $b a- $s $b a- $k $b >c< $s $b >e-< |
+$1g:  $k $b g $s $b g $k $b b $s $b >d< |
+$1gf: $k $b g $s $b g $k $b b $s $s |
+$1fm: $k $b f $s $b f $k $b a- $s $b >c< |
+$1cm: $k $b c $s $b c $k $b e- $s $b g |
+$1db: $k $b d- $s $b d- $k $b f $s $b a- |
+
+sid1: l8 q7
+sid1: $r1 $r2 $r1 $r2 $1ab $1ab $1g $1gf
+sid1: $1fm $1fm $1cm $1cm $1db $1db $1g $1gf
+
+; ---- sid2
+$t: @stab v11 o4
+$w: @wheel v11 o3
+$2cm: $t r4 {ce-g}8 r8 r4 {ce-g}8 r8 |
+$2ab: $t r4 {ce-a-}8 r8 r4 {ce-a-}8 r8 |
+$2g:  $t r4 {dgb}8 r8 r4 {dgb}8 r8 |
+$3fm: $w {a->cf}1 |
+$3cm: $w {g>ce-}1 |
+$3db: $w {a->d-f}1 |
+$3g:  $w {gb>d}1 |
+
+sid2: q8
+sid2: $2cm $2cm $2cm $2cm $2ab $2ab $2g $2g
+sid2: $3fm $3fm $3cm $3cm $3db $3db $3g $3g
+
+; ---- sid3
+sid3: @brass v15 o4 l4 q8
+sid3: c2 e- g | g-2 f2 | c2 e- g | b-2 a- g |
+sid3: a-2 >c e-< | >f2 e-2< | >d2 <b g | >d1< |
+sid3: >c4. <a-8 f2 | >c4. <a-8 >f2< | >e-4. c8 <g2 | >e-4. c8 g2< |
+sid3: >d-4. <a-8 f2 | >d-4. f8 a-2< | >g f8 e-8 d <b | g2. r |

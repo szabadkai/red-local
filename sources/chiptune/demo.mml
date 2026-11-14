@@ -1,0 +1,22 @@
+; 8-bar loop in A minor: Am F C G | Am F C-G E
+tempo 140
+loop 2
+
+; lead
+pulse1: @2 v13 o5 l8
+pulse1: a4 e a b >c< b a   | f4 c f a g f e
+pulse1: e4 c e g >c4< g    | d4 <b> d g b4 r
+pulse1: a4 e a b >c< b >e< | >f4 e d c4 <a4
+pulse1: g4 e g >c4< b g    | g+4 b >e4< b g+ e
+
+; chords as 60 Hz arpeggios
+pulse2: @0 v7 o4 l4
+pulse2: [{a>ce}]4 [{fa>c}]4 [{ceg}]4 [{gb>d}]4
+pulse2: [{a>ce}]4 [{fa>c}]4 [{ceg}]2 [{gb>d}]2 [{g+b>e}]4
+
+; octave-bounce bass
+tri: o2 l8
+tri: [a>a<]4 [f>f<]4 [>c>c<<]4 [g>g<]4
+tri: [a>a<]4 [f>f<]4 [>c>c<<]2 [g>g<]2 [e>e<]4
+
+noise: v10 l8 [k h s h k k s h]8

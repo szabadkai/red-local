@@ -1,0 +1,55 @@
+; RED, boss 4: the Bell Widow. Chapel timber, silk and stolen clothes on long jointed legs.
+; B minor, very fast. The bass skitters in sixteenths around each root by a semitone.
+; First half: the bell is struck every other bar. Second half (she crosses the bell and
+; sends rings of sound along the floor): the bell tolls every bar and the lead slows to
+; long falling notes over a Neapolitan C.
+;   sid1  kick, snare and skittering bass on one voice
+;   sid2  the bell, then chord arpeggios
+;   sid3  lead
+tempo 160
+bars 16
+
+inst kick  wave=n,p arp=36,19,12,7,3,0,-3,-5,-7,-9 pw=50 adsr=0,8,0,0
+inst snare wave=n,n,p,n arp=31,31,5,29,27 pw=50 adsr=0,10,0,0
+inst bass  wave=p pw=15-60/1.5 adsr=0,10,10,2 filter=lp cut=250-1800/25 res=0.8
+inst arp   wave=p arp=12,0 pw=10-45/1 adsr=0,12,6,3
+inst bell  wave=t ring=2.76 adsr=0,40,0,30
+inst veil  wave=p,p,s pw=12-30/1.5 vib=0.35 adsr=0,14,11,5
+
+$k: @kick v15 o2 c
+$s: @snare v11 o3 g
+$b: @bass v10 o2
+
+; ---- sid1 (l16)
+$1bm: $k $b b >c< b $s $b b a# b $k $b b >c< b $s $b >d c#< b |
+$1g:  $k $b g a- g $s $b g f# g $k $b g a- g $s $b b a g |
+$1f:  $k $b f# g f# $s $b f# f f# $k $b f# g f# $s $b a# g# f# |
+$1em: $k $b e f e $s $b e d# e $k $b e f e $s $b g f# e |
+$1c:  $k $b >c d- c< $s $b >c< b >c< $k $b >c d- c< $s $b >e d c< |
+
+sid1: l16 q7
+sid1: $1bm $1bm $1g $1f $1bm $1bm $1em $1f
+sid1: $1em $1em $1bm $1bm $1c $1c $1f $1f
+
+; ---- sid2 (l8): bars ending in b start with a bell stroke
+$l: @bell v6 o5
+$a: @arp v9 o4
+$2bm:  $a [{b>df#}]8 |
+$2bmb: $l b4 $a [{b>df#}]6 |
+$2g:   $a [{b>dg}]8 |
+$2f:   $a [{a#>c#f#}]8 |
+$2fb:  $l f#4 $a [{a#>c#f#}]6 |
+$2em:  $a [{b>eg}]8 |
+$2emb: $l e4 $a [{b>eg}]6 |
+$2cb:  $l >c4< $a [{>ceg}]6 |
+
+sid2: l8 q7
+sid2: $2bmb $2bm $2g $2f $2bmb $2bm $2em $2f
+sid2: $2emb $2emb $2bmb $2bmb $2cb $2cb $2fb $2fb
+
+; ---- sid3
+sid3: @veil v14 o5 l8 q7
+sid3: b4 >d c#< b a# >f#4< | >e d c# d< b2 | b4 >d c#< b g >d4< | >c#4 <a# f# a# >c#4.< |
+sid3: b4 >d c#< b a# >f#4< | >e d c# d f#2< | >g4 f# e d# e <b4 | a#4 >c# e d c# <a#4 |
+sid3: q8 >e2 <b2 | >g2 e2< | >d2 <b2 | >f#2 d2< |
+sid3: >e2 c2< | >g2 e4 c4< | >f#4 e d c#4 <a#4 | f#2. r4 |

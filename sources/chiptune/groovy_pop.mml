@@ -1,0 +1,76 @@
+; Groovy pop in F, 8 channels: 4 pulse, triangle, saw, 2 noise.
+; Layers by section (24 bars, loops):
+;   intro  1-4    bass, kick, hats; stabs join at bar 3
+;   verse  5-12   + clap groove, arps, lead; lead echo joins at bar 9
+;   chorus 13-20  all 8: saw line, four-on-the-floor, open hats
+;   outro  21-24  thin drums, bass, arps, saw
+; Verse/intro/outro chords: Gm7 C7 Fmaj7 Dm7. Chorus: Bb C Am Dm | Bb C F F-C7.
+tempo 116
+swing 56
+bars 24
+loop 1
+
+; ---- lead
+$v1: r8 d8 f g b-8 a8. g f8 d8 | e8. g r8 e8 r c8 e g8 b-8
+$v1: a4 r8 g a r >c8.< a8 g8 | f8. d r4 r8 d f a8 >c8<
+$v2: >d8.< b- r8 g8 r b-8 g f8 d8 | e8 g8 b-8. g r8 e8 c8 e8
+$v2: f8. a r >c8.< a8 f8 a8 >c8< | >d4< a8 f8 d4 r8 f g
+$c1: b-8 b- >d8.< b-8 r >f8 d< b-8 >d8<
+$c2: >c8 c e8.< g8 r >e8 c< g8 >c8<
+$ch: $c1 | $c2 | >c8 c e8. c8 r c8 <a >c8 <a8 | a8 a >d8.< a8 f8 e8 d4
+$ch: $c1 | >c8 c e8. g8 r g8 e c8 <b-8 | a2 r8 f8 a8 >c8< | >c4. <a8 g4 e4
+
+pulse1: @2 v12 o5 l16 q7
+pulse1: [r1]4 $v1 $v2 @1 v13 $ch
+
+; ---- lead echo, a dotted eighth behind
+pulse2: @2 v4 o5 l16 q7
+pulse2: r8. [r1]8 $v2 $ch
+
+; ---- chord arpeggios
+$av: [{gb->df}8. {gb->df}8. {gb->df}8]2 [{gb->ce}8. {gb->ce}8. {gb->ce}8]2
+$av: [{fa>ce}8. {fa>ce}8. {fa>ce}8]2 [{fa>cd}8. {fa>cd}8. {fa>cd}8]2
+$ac: [{fb->d}8]8 [{g>ce}8]8 [{a>ce}8]8 [{a>df}8]8
+$ac: [{fb->d}8]8 [{g>ce}8]8 [{a>cf}8]8 [{a>cf}8]4 [{gb->ce}8]4
+
+pulse3: @0 v6 o3 l16 q6
+pulse3: [r1]4 $av $av o4 q5 $ac o3 q6 $av
+
+; ---- offbeat chord stabs
+$sv1: r8 {b->df}8 r {b->df} r8 r8 {b->df}8 r {b->df} r {b->df}
+$sv1: r8 {b->eg}8 r {b->eg} r8 r8 {b->eg}8 r {b->eg} r {b->eg}
+$sv2: r8 {a>ce}8 r {a>ce} r8 r8 {a>ce}8 r {a>ce} r {a>ce}
+$sv2: r8 {a>cf}8 r {a>cf} r8 r8 {a>cf}8 r {a>cf} r {a>cf}
+$sc: [r8 {b->df}8]4 [r8 {>ceg}8]4 [r8 {a>ce}8]4 [r8 {a>df}8]4
+$sc: [r8 {b->df}8]4 [r8 {>ceg}8]4 [r8 {a>cf}8]4 [r8 {a>cf}8]2 [r8 {b->eg}8]2
+
+pulse4: @1 v5 o4 l16 q4
+pulse4: [r1]2 $sv2 $sv1 $sv2 $sv1 $sv2 v6 $sc
+
+; ---- bass
+$bv: o2 g8 >g< g r >g< g8 g g >g8< r >d f8< | o3 c8 >c< c r >c< c8 c c >c8< r g b-8
+$bv: o2 f8 >f< f r >f< f8 f f >f8< r >c e8< | o3 d8 >d< d r >d< d8 d d >d8< r a >c8<
+$bc1: o2 b-8 >b-8< b-8 >b-< b- r b-8 >b-< b-8 >b-8< | o3 c8 >c8< c8 >c< c r c8 >c< c8 >c8<
+$bc: $bc1 | o2 a8 >a8< a8 >a< a r a8 >a< a8 >a8< | o3 d8 >d8< d8 >d< d r d8 >d< d8 >d8<
+$bc: $bc1 | o2 f8 >f8< f8 >f< f r f8 >f< f8 >f8< | f8 >f8< f8 >f< f o3 c8 >c< c g8 b-8
+
+tri: l16 q6
+tri: $bv $bv $bv $bc $bv
+
+; ---- saw: guide-tone line under the chorus, riff in the outro
+saw: v7 o4 l16 q8
+saw: [r1]12 d1 e1 e2 c2 d2 f2 | f1 g1 a2. g4 f2 e2 | g2 b-2 >c2< b-2 a1 a2 >c2<
+
+; ---- kick / snare / clap
+noise1: v12 l16
+noise1: [k4 k4 k4 k8. k]3 k4 k4 k8 s8 s s s8
+noise1: [k4 c8 k8 k8. k c4]7 k4 c8 k8 k8 s s c8 c8
+noise1: [k4 k4 k4 k8. k]7 k4 k4 k8 s8 s s s s
+noise1: k1 k1 k4 k4 k4 k4 k8 k8 s8 s8 s s s s s8 c8
+
+; ---- hats (claps on 2 and 4 in the chorus)
+noise2: l16
+noise2: v6 [[h8 h h]4]4
+noise2: [[v9 h8 v5 h v7 h]4]8
+noise2: [v8 h v5 h v9 p v5 h v11 c v5 h v9 p v5 h]16
+noise2: [[v7 h8 v4 h v6 h]4]3 [v8 h]8 v9 p4 r4
